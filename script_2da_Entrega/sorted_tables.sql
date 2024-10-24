@@ -92,8 +92,8 @@ CREATE TABLE producto
     descripcion NVARCHAR(50), 
     precio DECIMAL,
     foreign key (cod_subrubro) REFERENCES subrubro(cod_subrubro),
-     foreign key (cod_marca) REFERENCES marca_producto(cod_marca),
-     foreign key (cod_modelo) REFERENCES modelo_producto(cod_modelo)
+    foreign key (cod_marca) REFERENCES marca_producto(cod_marca),
+    foreign key (cod_modelo) REFERENCES modelo_producto(cod_modelo)
 )
 
 CREATE TABLE almacen
@@ -243,4 +243,3 @@ create table envio
     foreign key (cod_domicilio) REFERENCES domicilio(cod_domicilio),
     foreign key (cod_tipo) REFERENCES tipo_envio(cod_tipo)
 )
-
