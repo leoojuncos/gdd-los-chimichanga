@@ -534,6 +534,145 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE migrar_domicilio
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_usuario
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_cliente
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_vendedor
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_rubro
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_subrubro
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_marca_producto
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_modelo_producto
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_producto
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_almacen
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_publicacion
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_tipo_detalle_factura
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_detalle_factura
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_concepto
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_factura
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_tipo_envio
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_detalle_venta
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_tipo_medio_de_pago
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_medio_de_pago
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_detalle_pago
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_venta
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_pago
+AS
+BEGIN
+END
+GO
+
+CREATE PROCEDURE migrar_envio
+AS
+BEGIN
+END
+GO
+
+
 --------------------------- Super Procedure ---------------------------
 
 CREATE PROCEDURE migrar_db 
@@ -554,9 +693,8 @@ BEGIN
     EXEC migrar_publicacion
     EXEC migrar_tipo_detalle_factura
     EXEC migrar_detalle_factura
-    EXEC migrar_provincia
-    EXEC migrar_concepto
     EXEC migrar_factura
+    EXEC migrar_concepto
     EXEC migrar_tipo_envio
     EXEC migrar_detalle_venta
     EXEC migrar_tipo_medio_de_pago
