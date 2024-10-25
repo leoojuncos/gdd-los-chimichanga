@@ -82,7 +82,86 @@ GO
 
 -------------------- Eliminación de Procedures ---------------------------
 
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarProvincia', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarProvincia;
 
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarLocalidad', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarLocalidad;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarDomicilio', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarDomicilio;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarUsuario', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarUsuario;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarCliente', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarCliente;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarVendedor', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarVendedor;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarRubro', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarRubro;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarSubrubro', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarSubrubro;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarMarcaProducto', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarMarcaProducto;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarModeloProducto', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarModeloProducto;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarProducto', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarProducto;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarAlmacen', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarAlmacen;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarPublicacion', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarPublicacion;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarTipoDetalleFactura', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarTipoDetalleFactura;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarDetalleFactura', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarDetalleFactura;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarFactura', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarFactura;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarConcepto', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarConcepto;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarTipoEnvio', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarTipoEnvio;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarEnvio', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarEnvio;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarDetalleVenta', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarDetalleVenta;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarVenta', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarVenta;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarTipoMedioDePago', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarTipoMedioDePago;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarMedioDePago', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarMedioDePago;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarDetallePago', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarDetallePago;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarPago', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarPago;
+
+-- Super Procedure para ejecutar todas las migraciones
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrarDb', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrarDb;
+GO
 
 -------------------- Eliminación del esquema ---------------------------
 
@@ -289,7 +368,6 @@ CREATE TABLE LOS_CHIMICHANGAS.envio(
 
 -------------------- Creación de PK ---------------------------
 
-
 ALTER TABLE LOS_CHIMICHANGAS.provincia
 ADD CONSTRAINT pk_provincia PRIMARY KEY (cod_provincia);
 
@@ -484,11 +562,11 @@ FOREIGN KEY (cod_tipo) REFERENCES LOS_CHIMICHANGAS.tipo_envio(cod_tipo);
 
 GO
 
---------------------------- Migración de tablas ---------------------------
+--------------------------- Procedures ---------------------------
 
--- Migración de Provincia
+-- Migración de Provincia, Localidad y Domicilio
 
-CREATE PROCEDURE migrar_provincia
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_provincia
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.provincia (nombre)
@@ -510,197 +588,262 @@ BEGIN
 END
 GO
 
--- Migración de Localidad
-
-CREATE PROCEDURE migrar_localidad
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_localidad
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.localidad (nombre)
-    SELECT DISTINCT VEN_USUARIO_DOMICILIO_LOCALIDAD  AS nombre
+    CREATE TABLE #LocalidadesTemporal (nombre NVARCHAR(255)); -- Tabla temporal
+
+    INSERT INTO #LocalidadesTemporal (nombre)
+    SELECT DISTINCT VEN_USUARIO_DOMICILIO_LOCALIDAD
     FROM gd_esquema.Maestra
-    WHERE VEN_USUARIO_DOMICILIO_LOCALIDAD  IS NOT NULL
+    WHERE VEN_USUARIO_DOMICILIO_LOCALIDAD IS NOT NULL
 
     UNION
 
-    SELECT DISTINCT ALMACEN_Localidad AS nombre
+    SELECT DISTINCT ALMACEN_Localidad
     FROM gd_esquema.Maestra
     WHERE ALMACEN_Localidad IS NOT NULL
 
     UNION
 
-    SELECT DISTINCT CLI_USUARIO_DOMICILIO_LOCALIDAD AS nombre
+    SELECT DISTINCT CLI_USUARIO_DOMICILIO_LOCALIDAD
     FROM gd_esquema.Maestra
     WHERE CLI_USUARIO_DOMICILIO_LOCALIDAD IS NOT NULL;
+
+    MERGE INTO LOS_CHIMICHANGAS.localidad AS destino
+    USING #LocalidadesTemporal AS origen
+    ON destino.nombre = origen.nombre
+    WHEN NOT MATCHED THEN
+        INSERT (nombre)
+        VALUES (origen.nombre);
+
+    DROP TABLE #LocalidadesTemporal;
 END
 GO
 
-CREATE PROCEDURE migrar_domicilio
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_domicilio
+AS
+BEGIN
+    INSERT INTO LOS_CHIMICHANGAS.domicilio (cod_provincia, calle, numero, cod_postal, piso, departamento)
+    SELECT 
+        (SELECT cod_provincia FROM LOS_CHIMICHANGAS.provincia WHERE nombre = VEN_USUARIO_PROVINCIA) AS cod_provincia,
+        VEN_USUARIO_CALLE AS calle,
+        VEN_USUARIO_NUMERO AS numero,
+        VEN_USUARIO_COD_POSTAL AS cod_postal,
+        VEN_USUARIO_PISO AS piso,
+        VEN_USUARIO_DEPARTAMENTO AS departamento
+    FROM 
+        gd_esquema.Maestra
+    WHERE 
+        VEN_USUARIO_CALLE IS NOT NULL;
+
+    INSERT INTO LOS_CHIMICHANGAS.domicilio (cod_provincia, calle, numero, cod_postal)
+    SELECT 
+        (SELECT cod_provincia FROM LOS_CHIMICHANGAS.provincia WHERE nombre = ALMACEN_PROVINCIA) AS cod_provincia,
+        ALMACEN_CALLE AS calle,
+        CAST(ALMACEN_NRO_CALLE AS NVARCHAR(50)) AS numero,
+        ALMACEN_COD_POSTAL AS cod_postal,
+        NULL AS piso,
+        NULL AS departamento
+    FROM 
+        gd_esquema.Maestra
+    WHERE 
+        ALMACEN_CALLE IS NOT NULL;
+
+    INSERT INTO LOS_CHIMICHANGAS.domicilio (cod_provincia, calle, numero, cod_postal, piso, departamento)
+    SELECT 
+        (SELECT cod_provincia FROM LOS_CHIMICHANGAS.provincia WHERE nombre = CLI_USUARIO_PROVINCIA) AS cod_provincia,
+        CLI_USUARIO_CALLE AS calle,
+        CLI_USUARIO_NUMERO AS numero,
+        CLI_USUARIO_COD_POSTAL AS cod_postal,
+        CLI_USUARIO_PISO AS piso,
+        CLI_USUARIO_DEPARTAMENTO AS departamento
+    FROM 
+        gd_esquema.Maestra
+    WHERE 
+        CLI_USUARIO_CALLE IS NOT NULL;
+END
+GO
+
+-- Migración de Usuario, Cliente y Vendedor
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_usuario
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_usuario
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_cliente
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_cliente
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_vendedor
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_vendedor
+-- Migración de Rubro y Subrubro
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_rubro
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_rubro
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_subrubro
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_subrubro
+-- Migración de Marca Producto, Modelo Producto y Producto
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_marca_producto
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_marca_producto
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_modelo_producto
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_modelo_producto
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_producto
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_producto
+-- Migración de Almacen y Publicacion
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_almacen
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_almacen
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_publicacion
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_publicacion
+-- Migración de Tipo Detalle Factura, Detalle Factura, Concepto y Factura
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_detalle_factura
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_tipo_detalle_factura
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_factura
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_detalle_factura
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_concepto
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_concepto
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_factura
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_factura
+-- Migración de Tipo Envio y Envio
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_envio
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_tipo_envio
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_envio
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_detalle_venta
+
+-- Migración de Detalle Venta y Venta
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_venta
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_tipo_medio_de_pago
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_venta
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_medio_de_pago
+-- Migración de Tipo Medio de Pago, Medio de Pago, Detalle Pago y Pago
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_detalle_pago
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_medio_de_pago
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_venta
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_pago
 AS
 BEGIN
 END
 GO
 
-CREATE PROCEDURE migrar_pago
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_pago
 AS
 BEGIN
 END
 GO
-
-CREATE PROCEDURE migrar_envio
-AS
-BEGIN
-END
-GO
-
 
 --------------------------- Super Procedure ---------------------------
 
-CREATE PROCEDURE migrar_db 
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_db 
 AS
 BEGIN
-    EXEC migrar_provincia
-    EXEC migrar_localidad
-    EXEC migrar_domicilio
-    EXEC migrar_usuario
-    EXEC migrar_cliente
-    EXEC migrar_vendedor
-    EXEC migrar_rubro
-    EXEC migrar_subrubro
-    EXEC migrar_marca_producto
-    EXEC migrar_modelo_producto
-    EXEC migrar_producto
-    EXEC migrar_almacen
-    EXEC migrar_publicacion
-    EXEC migrar_tipo_detalle_factura
-    EXEC migrar_detalle_factura
-    EXEC migrar_factura
-    EXEC migrar_concepto
-    EXEC migrar_tipo_envio
-    EXEC migrar_detalle_venta
-    EXEC migrar_tipo_medio_de_pago
-    EXEC migrar_medio_de_pago
-    EXEC migrar_detalle_pago
-    EXEC migrar_venta
-    EXEC migrar_pago
-    EXEC migrar_envio
+    EXEC LOS_CHIMICHANGASmigrar_provincia
+    EXEC LOS_CHIMICHANGAS.migrar_localidad
+    EXEC LOS_CHIMICHANGAS.migrar_domicilio
+    EXEC LOS_CHIMICHANGAS.migrar_usuario
+    EXEC LOS_CHIMICHANGAS.migrar_cliente
+    EXEC LOS_CHIMICHANGAS.migrar_vendedor
+    EXEC LOS_CHIMICHANGAS.migrar_rubro
+    EXEC LOS_CHIMICHANGAS.migrar_subrubro
+    EXEC LOS_CHIMICHANGAS.migrar_marca_producto
+    EXEC LOS_CHIMICHANGAS.migrar_modelo_producto
+    EXEC LOS_CHIMICHANGAS.migrar_producto
+    EXEC LOS_CHIMICHANGAS.migrar_almacen
+    EXEC LOS_CHIMICHANGAS.migrar_publicacion
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura
+    EXEC LOS_CHIMICHANGAS.migrar_factura
+    EXEC LOS_CHIMICHANGAS.migrar_concepto
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_envio
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago
+    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_pago
+    EXEC LOS_CHIMICHANGAS.migrar_venta
+    EXEC LOS_CHIMICHANGAS.migrar_pago
+    EXEC LOS_CHIMICHANGAS.migrar_envio
 END
+
+-- EXEC LOS_CHIMICHANGAS.migrar_db 
