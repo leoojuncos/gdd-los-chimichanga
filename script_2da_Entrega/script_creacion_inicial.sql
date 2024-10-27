@@ -201,6 +201,7 @@ CREATE TABLE LOS_CHIMICHANGAS.usuario(
     cod_domicilio       DECIMAL		            NOT NULL,
     nombre              NVARCHAR(50),			
     contrasenia         NVARCHAR(50),
+    mail                NVARCHAR(50),
     fecha_creacion      DATE
 )
 
@@ -210,7 +211,6 @@ CREATE TABLE LOS_CHIMICHANGAS.cliente(
     nombre             NVARCHAR(50),
     apellido           NVARCHAR(50),
     fecha_nacimiento   DATE,
-    mail               NVARCHAR(50),
     dni                NVARCHAR(50)
 )
 
@@ -219,7 +219,6 @@ CREATE TABLE LOS_CHIMICHANGAS.vendedor(
     cod_usuario        DECIMAL					NOT NULL,
     razon_social       NVARCHAR(50)				NOT NULL,
     cuit               NVARCHAR(50),
-    mail               NVARCHAR(50)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.rubro(
@@ -360,8 +359,8 @@ CREATE TABLE LOS_CHIMICHANGAS.envio(
     cod_domicilio          DECIMAL                  NOT NULL,
     cod_tipo               DECIMAL                  NOT NULL,
     fecha_programada       DATE,
-    horario_inicio         TIME,
-    horario_fin            TIME,
+    horario_inicio         DECIMAL,
+    horario_fin            DECIMAL,
     fecha_entrega          DATE,
     costo_envio            DECIMAL
 )
@@ -564,7 +563,7 @@ GO
 
 --------------------------- Procedures ---------------------------
 
--- Migración de Provincia, Localidad y Domicilio ✅
+-- Migración de Provincia, Localidad y Domicilio 
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_provincia
 AS
@@ -599,17 +598,18 @@ BEGIN
 
     UNION
 
-    SELECT DISTINCT p.cod_provincia, m.ALMACEN_Localidad 
-    FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.ALMACEN_PROVINCIA
-    WHERE ALMACEN_Localidad IS NOT NULL
-
-    UNION
-
+    
     SELECT DISTINCT p.cod_provincia, m.CLI_USUARIO_DOMICILIO_LOCALIDAD 
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.CLI_USUARIO_DOMICILIO_PROVINCIA
-    WHERE CLI_USUARIO_DOMICILIO_LOCALIDAD IS NOT NULL;
+    WHERE CLI_USUARIO_DOMICILIO_LOCALIDAD IS NOT NULL
+
+    UNION
+
+    SELECT DISTINCT p.cod_provincia, m.ALMACEN_Localidad 
+    FROM gd_esquema.Maestra AS m
+    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.ALMACEN_PROVINCIA
+    WHERE ALMACEN_Localidad IS NOT NULL;
 END
 GO
 
@@ -626,12 +626,9 @@ BEGIN
 		m.VEN_USUARIO_DOMICILIO_DEPTO
     FROM gd_esquema.Maestra AS m
 	JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.VEN_USUARIO_DOMICILIO_PROVINCIA
-    WHERE m.VEN_USUARIO_DOMICILIO_CALLE IS NOT NULL AND
-		  m.VEN_USUARIO_DOMICILIO_NRO_CALLE IS NOT NULL AND
-		  m.VEN_USUARIO_DOMICILIO_CP IS NOT NULL AND
-		  m.VEN_USUARIO_DOMICILIO_PISO IS NOT NULL AND
-	      m.VEN_USUARIO_DOMICILIO_DEPTO IS NOT NULL
-		  
+    JOIN LOS_CHIMICHANGAS.localidad AS l ON m.VEN_USUARIO_DOMICILIO_LOCALIDAD = l.nombre AND l.cod_provincia = p.cod_provincia
+    WHERE m.VEN_USUARIO_DOMICILIO_CALLE IS NOT NULL
+
 	UNION
 
     SELECT DISTINCT 
@@ -643,88 +640,121 @@ BEGIN
         m.CLI_USUARIO_DOMICILIO_DEPTO AS departamento 
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p ON m.CLI_USUARIO_DOMICILIO_PROVINCIA = p.nombre
-	WHERE m.CLI_USUARIO_DOMICILIO_CALLE IS NOT NULL AND
-		  m.CLI_USUARIO_DOMICILIO_NRO_CALLE IS NOT NULL AND
-		  m.CLI_USUARIO_DOMICILIO_CP IS NOT NULL AND
-		  m.CLI_USUARIO_DOMICILIO_PISO IS NOT NULL AND
-	      m.CLI_USUARIO_DOMICILIO_DEPTO IS NOT NULL
+    JOIN LOS_CHIMICHANGAS.localidad AS l ON m.CLI_USUARIO_DOMICILIO_LOCALIDAD = l.nombre AND l.cod_provincia = p.cod_provincia
+	WHERE m.CLI_USUARIO_DOMICILIO_CALLE IS NOT NULL
 
-    UNION
+    --UNION
 
-    SELECT DISTINCT 
-        p.cod_provincia,                       
-        m.ALMACEN_CALLE AS calle,               
-        m.ALMACEN_NRO_CALLE AS numero,         
-        m.ALMACEN_CODIGO AS cod_postal,         
-        NULL AS piso,                           
-        NULL AS departamento                    
-    FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.provincia AS p ON m.ALMACEN_PROVINCIA = p.nombre
-    WHERE m.ALMACEN_CALLE IS NOT NULL AND
-		  m.ALMACEN_NRO_CALLE IS NOT NULL AND
-		  m.ALMACEN_CODIGO IS NOT NULL
+    --SELECT DISTINCT 
+      --  p.cod_provincia,                       
+      --  m.ALMACEN_CALLE AS calle,               
+      --  m.ALMACEN_NRO_CALLE AS numero,         
+    --    m.ALMACEN_CODIGO AS cod_postal,         
+    --    NULL AS piso,                           
+    --    NULL AS departamento                    
+    --FROM gd_esquema.Maestra AS m
+    --JOIN LOS_CHIMICHANGAS.provincia AS p ON m.ALMACEN_PROVINCIA = p.nombre
+    --JOIN LOS_CHIMICHANGAS.localidad AS l ON m.ALMACEN_Localidad = l.nombre AND l.cod_provincia = p.cod_provincia
+    --WHERE m.ALMACEN_CALLE IS NOT NULL 
 END
 GO
 
--- Migración de Usuario, Cliente y Vendedor (PAB PAB)
+-- Migración de Usuario, Cliente y Vendedor 
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_usuario
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.usuario (cod_domicilio, nombre, contrasenia, fecha_creacion)
-    SELECT DISTINCT d.cod_domicilio, m.VEN_USUARIO_NOMBRE, m.VEN_USUARIO_PASS, m.VEN_USUARIO_FECHA_CREACION
+    INSERT INTO LOS_CHIMICHANGAS.usuario (cod_domicilio, nombre, contrasenia, mail, fecha_creacion)
+    SELECT DISTINCT 
+        d.cod_domicilio, 
+        m.VEN_USUARIO_NOMBRE, 
+        m.VEN_USUARIO_PASS, 
+        m.VENDEDOR_MAIL
+        m.VEN_USUARIO_FECHA_CREACION
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.domicilio AS d 
-        ON m.VEN_USUARIO_DOMICILIO_CALLE = d.calle
-        AND m.VEN_USUARIO_DOMICILIO_NRO_CALLE = d.numero
-        AND m.VEN_USUARIO_DOMICILIO_CP = d.cod_postal
-        AND m.VEN_USUARIO_DOMICILIO_PROVINCIA = (SELECT nombre FROM LOS_CHIMICHANGAS.provincia WHERE cod_provincia = d.cod_provincia)
-    WHERE m.VEN_USUARIO_NOMBRE IS NOT NULL
+    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.VEN_USUARIO_DOMICILIO_PROVINCIA
+    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.nombre = m.VEN_USUARIO_DOMICILIO_LOCALIDAD
+    JOIN LOS_CHIMICHANGAS.domicilio AS d ON (
+        d.calle = VEN_USUARIO_DOMICILIO_CALLE AND
+        d.numero = VEN_USUARIO_DOMICILIO_NRO_CALLE AND
+        d.cod_postal = VEN_USUARIO_DOMICILIO_CP AND
+        d.piso = VEN_USUARIO_DOMICILIO_PISO AND
+        d.departamento = VEN_USUARIO_DOMICILIO_DEPTO
+    )
 	
 	UNION
 
-    SELECT DISTINCT d.cod_domicilio, m.CLI_USUARIO_NOMBRE, m.CLI_USUARIO_PASS, m.CLI_USUARIO_FECHA_CREACION
+    SELECT DISTINCT 
+        d.cod_domicilio, 
+        m.CLI_USUARIO_NOMBRE,
+        m.CLI_USUARIO_PASS,
+        m.CLIENTE_MAIL,
+        m.CLI_USUARIO_FECHA_CREACION
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.domicilio AS d 
-        ON m.CLI_USUARIO_DOMICILIO_CALLE = d.calle
-        AND m.CLI_USUARIO_DOMICILIO_NRO_CALLE = d.numero
-        AND m.CLI_USUARIO_DOMICILIO_CP = d.cod_postal
-        AND m.CLI_USUARIO_DOMICILIO_PROVINCIA = (SELECT nombre FROM LOS_CHIMICHANGAS.provincia WHERE cod_provincia = d.cod_provincia)
-    WHERE m.CLI_USUARIO_NOMBRE IS NOT NULL
+    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.CLI_USUARIO_DOMICILIO_PROVINCIA
+    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.nombre = m.CLI_USUARIO_DOMICILIO_LOCALIDAD
+    JOIN LOS_CHIMICHANGAS.domicilio AS d ON (
+        d.calle = CLI_USUARIO_DOMICILIO_CALLE AND
+        d.numero = CLI_USUARIO_DOMICILIO_NRO_CALLE AND
+        d.cod_postal = CLI_USUARIO_DOMICILIO_CP AND
+        d.piso = CLI_USUARIO_DOMICILIO_PISO AND
+        d.departamento = CLI_USUARIO_DOMICILIO_DEPTO
+    )
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_cliente
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.cliente (nombre, apellido, fecha_nacimiento, mail, dni, cod_usuario)
-    SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_FECHA_NAC, CLIENTE_MAIL, CLIENTE_DNI, u.cod_usuario
+    INSERT INTO LOS_CHIMICHANGAS.cliente (cod_usuario, nombre, apellido, fecha_nacimiento, dni)
+    SELECT DISTINCT 
+        u.cod_usuario, 
+        m.CLIENTE_NOMBRE, 
+        m.CLIENTE_APELLIDO, 
+        m.CLIENTE_FECHA_NAC, 
+        m.CLIENTE_DNI
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.usuario AS u ON m.CLI_USUARIO_NOMBRE = u.nombre
+    JOIN LOS_CHIMICHANGAS.usuario AS u ON (
+        u.nombre = CLI_USUARIO_NOMBRE AND
+        u.contrasenia = m.CLI_USUARIO_PASS AND
+        u.fecha_creacion = m.CLI_USUARIO_FECHA_CREACION AND
+        u.mail = m.CLIENTE_MAIL 
+    )
     WHERE CLIENTE_NOMBRE IS NOT NULL;
 END
 GO
 
+
+
+
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_vendedor
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.vendedor (razon_social, cuit, mail, cod_usuario)
-    SELECT DISTINCT VENDEDOR_RAZON_SOCIAL, VENDEDOR_CUIT, VENDEDOR_MAIL, u.cod_usuario
+    INSERT INTO LOS_CHIMICHANGAS.vendedor (cod_usuario, razon_social, cuit)
+    SELECT DISTINCT 
+        u.cod_usuario, 
+        m.VENDEDOR_RAZON_SOCIAL, 
+        m.VENDEDOR_CUIT, 
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.usuario AS u ON m.VEN_USUARIO_NOMBRE = u.nombre
+    JOIN LOS_CHIMICHANGAS.usuario AS u ON (
+        u.nombre = VEN_USUARIO_NOMBRE AND
+        u.contrasenia = m.VEN_USUARIO_PASS AND
+        u.fecha_creacion = m.VEN_USUARIO_FECHA_CREACION AND
+        u.mail = m.VENDEDOR_MAIL 
+    )    
     WHERE VENDEDOR_RAZON_SOCIAL IS NOT NULL;
 END
 GO
 
--- Migración de Rubro y Subrubro (LIAM)
+-- Migración de Rubro y Subrubro
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_rubro
 AS
 BEGIN
-    insert into LOS_CHIMICHANGAS.rubro (descripcion)
-    select distinct m.PRODUCTO_RUBRO_DESCRIPCION
-    from gd_esquema.Maestra
-    where m.PRODUCTO_RUBRO_DESCRIPCION is not null
+    INSERT INTO LOS_CHIMICHANGAS.rubro (descripcion)
+    SELECT DISTINCT m.PRODUCTO_RUBRO_DESCRIPCION
+    FROM gd_esquema.Maestra AS m
+    WHERE m.PRODUCTO_RUBRO_DESCRIPCION IS NOT NULL;
 END
 GO
 
@@ -732,23 +762,23 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_subrubro
 AS
 BEGIN
-    insert into LOS_CHIMICHANGAS.subrubro (cod_rubro, descripcion)
-    select distinct r.cod_rubro, m.PRODUCTO_SUB_RUBRO
-    from gd_esquema.Maestra as m
-    join LOS_CHIMICHANGAS.rubro as r on m.PRODUCTO_RUBRO_DESCRIPCION = r.descripcion
-    where m.PRODUCTO_SUB_RUBRO is not null
+    INSERT INTO LOS_CHIMICHANGAS.subrubro (cod_rubro, descripcion)
+    SELECT DISTINCT r.cod_rubro, m.PRODUCTO_SUB_RUBRO
+    FROM gd_esquema.Maestra AS m
+    JOIN LOS_CHIMICHANGAS.rubro AS r ON r.descripcion = m.PRODUCTO_RUBRO_DESCRIPCION
+    WHERE m.PRODUCTO_SUB_RUBRO IS NOT NULL;
 END
 GO
 
--- Migración de Marca Producto, Modelo Producto y Producto (joacoBANANA)
+-- Migración de Marca Producto, Modelo Producto y Producto
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_marca_producto
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.marca_producto (descripcion)
-    SELECT DISTINCT m.PRODUCTO_DESCRIPCION AS prod_desc
-    FROM gd_esquema.Maestra as m
-    WHERE prod_desc IS NOT NULL;
+    SELECT DISTINCT m.PRODUCTO_MARCA
+    FROM gd_esquema.Maestra AS m
+    WHERE m.PRODUCTO_MARCA IS NOT NULL;
 END
 GO
 
@@ -756,9 +786,9 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_modelo_producto
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.modelo_producto (descripcion)
-    SELECT DISTINCT m.PRODUCTO_MOD_DESCRIPCION AS mod_desc
-    FROM gd_esquema.Maestra as m
-    WHERE mod_desc IS NOT NULL;
+    SELECT DISTINCT m.PRODUCTO_MOD_DESCRIPCION
+    FROM gd_esquema.Maestra AS m
+    WHERE m.PRODUCTO_MOD_DESCRIPCION IS NOT NULL;
 END
 GO
 
@@ -784,7 +814,7 @@ BEGIN
 END
 GO
 
--- Migración de Almacen y Publicacion (PAB PAB)
+-- Migración de Almacen y Publicacion
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_almacen
 AS
@@ -798,7 +828,7 @@ BEGIN
         m.ALMACEN_COSTO_DIA_AL AS costo_dia   
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p      
-    ON m.ALMACEN_PROVINCIA = p.descripcion    
+    ON m.ALMACEN_PROVINCIA = p.nombre    
     WHERE m.ALMACEN_CALLE IS NOT NULL;
 END
 GO
@@ -829,7 +859,7 @@ BEGIN
 END
 GO
 
--- Migración de Tipo Detalle Factura, Detalle Factura, Concepto y Factura (PAB PAB)
+-- Migración de Tipo Detalle Factura, Detalle Factura, Concepto y Factura
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_detalle_factura
 AS
@@ -895,6 +925,7 @@ GO
 
 -- Migración de Tipo Envio y Envio (Liam)
 
+
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_envio
 AS
 BEGIN
@@ -905,33 +936,34 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_envio
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_envio -- revisar join venta
 AS
 BEGIN
     insert into LOS_CHIMICHANGAS.envio (cod_venta, cod_domicilio, cod_tipo, fecha_programada, horario_inicio, horario_fin, fecha_entrega, costo_envio)
-    select distinct 
+    select distinct
         v.cod_venta,
         d.cod_domicilio,
         te.cod_tipo,
-        m.ENVIO_FECHA_PROGRAMADA,
-        m.ENVIO_HORARIO_INICIO,
-        m.ENVIO_HORARIO_FIN,
+        m.ENVIO_FECHA_PROGAMADA,
+        m.ENVIO_HORA_INICIO,
+        m.ENVIO_HORA_FIN_INICIO,
         m.ENVIO_FECHA_ENTREGA,
         m.ENVIO_COSTO
     from gd_esquema.Maestra as m
-    join LOS_CHIMICHANGAS.venta as v on m.VENTA_CODIGO = v.cod_venta
-    join LOS_CHIMICHANGAS.domicilio as d on m.ENVIO_DOMICILIO = d.cod_domicilio
-    join LOS_CHIMICHANGAS.tipo_envio as te on m.ENVIO_TIPO = te.descripcion
-    where m.ENVIO_FECHA_PROGRAMADA is not null
-    and m.ENVIO_HORARIO_INICIO is not null
-    and m.ENVIO_HORARIO_FIN is not null
-    and m.ENVIO_FECHA_ENTREGA is not null
-    and m.ENVIO_COSTO is not null
+        join LOS_CHIMICHANGAS.venta as v on v.cod_venta = m.VENTA_CODIGO
+        join LOS_CHIMICHANGAS.cliente c on v.cod_cliente = c.cod_cliente
+        join LOS_CHIMICHANGAS.usuario u on c.cod_usuario = u.cod_usuario
+        join LOS_CHIMICHANGAS.domicilio d on u.cod_domicilio = d.cod_domicilio
+        join LOS_CHIMICHANGAS.tipo_envio te on te.descripcion = m.ENVIO_TIPO
+    where m.ENVIO_FECHA_PROGAMADA is not null
+      and m.ENVIO_HORA_INICIO is not null
+      and m.ENVIO_HORA_FIN_INICIO is not null
+      and m.ENVIO_FECHA_ENTREGA is not null
+      and m.ENVIO_COSTO is not null
 END
 GO
 
-
--- Migración de Detalle Venta y Venta (PABPAB)
+-- Migración de Detalle Venta y Venta
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_venta
 AS
@@ -975,7 +1007,7 @@ BEGIN
     INSERT INTO LOS_CHIMICHANGAS.tipo_medio_de_pago (descripcion)
     SELECT DISTINCT m.PAGO_TIPO_MEDIO_PAGO AS tipo_medio_pago
     FROM gd_esquema.Maestra AS m 
-    WHERE tipo_medio_pago IS NOT NULL
+    WHERE m.PAGO_TIPO_MEDIO_PAGO IS NOT NULL
 END
 GO
 
@@ -987,11 +1019,11 @@ BEGIN
         tmp.cod_tipo_medio_pago,
         m.PAGO_TIPO_MEDIO_PAGO AS descripcion
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp ON m.PAGO_MEDIO_PAGO = tmp.descripcion
+    JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp ON m.PAGO_MEDIO_PAGO = tmp.cod_tipo_medio_pago
     WHERE m.PAGO_TIPO_MEDIO_PAGO IS NOT NULL
     AND m.PAGO_MEDIO_PAGO IS NOT NULL;
-GO
 END
+GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_pago
 AS
@@ -1011,17 +1043,17 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_pago
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.pago(cod_venta, cod_detalle, cod_medio, fecha_pago, importe)
+    INSERT INTO LOS_CHIMICHANGAS.pago(cod_venta, cod_detalle_pago, cod_medio, fecha_pago, importe)
     SELECT DISTINCT 
         v.cod_venta,
         dp.cod_detalle,
         mp.cod_medio,
-        m.PAGO_FECHA AS fecha_pago
-        m.IMPORTE AS importe
+        m.PAGO_FECHA AS fecha_pago,
+        m.PAGO_IMPORTE AS importe
     FROM gd_esquema.Maestra as m 
     JOIN LOS_CHIMICHANGAS.venta AS v ON m.VENTA_CODIGO = v.cod_venta
     JOIN LOS_CHIMICHANGAS.detalle_pago AS dp ON m.PAGO_NRO_TARJETA = dp.nro_tarjeta
-                                             AND m.PAGO_TARJETA_FECHA_VENC = dp.fecha_vecimiento
+                                             AND m.PAGO_FECHA_VENC_TARJETA = dp.fecha_vecimiento
                                              AND m.PAGO_CANT_CUOTAS = dp.cuotas
     JOIN LOS_CHIMICHANGAS.medio_de_pago AS mp ON m.PAGO_MEDIO_PAGO = mp.descripcion
     WHERE m.VENTA_CODIGO IS NOT NULL
@@ -1043,27 +1075,27 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_localidad              --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_domicilio              --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_usuario                --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_cliente                --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_vendedor               --FALTA PROBAR (PAB)
+    EXEC LOS_CHIMICHANGAS.migrar_cliente                --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_vendedor               --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_rubro                  --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_subrubro               --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_marca_producto         --FALTA PROBAR 
-    EXEC LOS_CHIMICHANGAS.migrar_modelo_producto        --FALTA PROBAR
-    EXEC LOS_CHIMICHANGAS.migrar_producto               --FALTA PROBAR
-    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura   --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura        --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_factura                --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_concepto               --FALTA LA DESCRIPCION (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_envio             --FALTA PROBAR
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago     --FALTA PROBAR
-    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          --FALTA PROBAR
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_pago           --FALTA PROBAR
-    EXEC LOS_CHIMICHANGAS.migrar_venta                  --FALTA PROBAR (PAB)
-    EXEC LOS_CHIMICHANGAS.migrar_pago                   --FALTA PROBAR (sin miedo!!!!)
-    EXEC LOS_CHIMICHANGAS.migrar_envio                  --FALTA PROBAR
+    EXEC LOS_CHIMICHANGAS.migrar_marca_producto         --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_modelo_producto        --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_producto               --NO FUNCIONA ❌ DA 0 (EL ERROR ESTA EN PRODUCTO)
+    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura   --FUNCIONA ✅ 
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura        --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_factura                --NO FUNCIONA ❌ DA 0
+--    EXEC LOS_CHIMICHANGAS.migrar_concepto               --FALTA LA DESCRIPCION (PAB)
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_envio             --FUNCIONA ✅ 
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago     --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_pago           --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_venta                  --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_pago                   --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_envio                  --NO FUNCIONA ❌ DA 0
 END
 
-EXEC LOS_CHIMICHANGAS.migrar_db 
+--EXEC LOS_CHIMICHANGAS.migrar_db 
