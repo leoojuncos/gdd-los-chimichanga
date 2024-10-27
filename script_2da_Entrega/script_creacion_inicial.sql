@@ -238,40 +238,41 @@ CREATE TABLE LOS_CHIMICHANGAS.marca_producto(
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.modelo_producto(
-    cod_modelo       DECIMAL IDENTITY(1,1)		NOT NULL,
+    cod_modelo       DECIMAL		            NOT NULL, 
     descripcion      NVARCHAR(50)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.producto(
-    cod_producto     DECIMAL IDENTITY(1,1)		NOT NULL,
+    cod_producto     DECIMAL  IDENTITY(1,1)     NOT NULL,
     cod_subrubro     DECIMAL                    NOT NULL,
     cod_marca        DECIMAL                    NOT NULL,
     cod_modelo       DECIMAL                    NOT NULL,
     descripcion      NVARCHAR(50),
-    precio           DECIMAL
+    codigo           NVARCHAR(50),
+    precio           DECIMAL(18, 2)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.almacen(
-    cod_almacen     DECIMAL IDENTITY(1,1)		NOT NULL,
+    cod_almacen     DECIMAL             		NOT NULL,
 	cod_provincia	DECIMAL						NOT NULL, 
     descripcion     NVARCHAR(50),
     calle           NVARCHAR(50), 
     nro_calle       DECIMAL,
-    costo_dia       DECIMAL
+    costo_dia       DECIMAL(18, 2)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.publicacion(
-    cod_publicacion    DECIMAL IDENTITY(1,1)	NOT NULL,
+    cod_publicacion    DECIMAL              	NOT NULL,
 	cod_vendedor	   DECIMAL                  NOT NULL,
     cod_producto       DECIMAL                  NOT NULL,
     cod_almacen        DECIMAL                  NOT NULL,
     descripcion        NVARCHAR(50),
     stock              INTEGER,
-    fecha_inicio       DATETIME,
-    fecha_fin          DATETIME,
-    precio             DATETIME,
-    costo_publicacion  DATETIME,
-    porcentaje_venta   DATETIME
+    fecha_inicio       DATE,
+    fecha_fin          DATE,
+    precio             DECIMAL(18, 2),
+    costo_publicacion  DECIMAL(18, 2),
+    porcentaje_venta   DECIMAL(18, 2)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.tipo_detalle_factura(
@@ -283,9 +284,9 @@ CREATE TABLE LOS_CHIMICHANGAS.detalle_factura(
     cod_detalle_factura  DECIMAL IDENTITY(1,1)  NOT NULL,
     cod_publicacion	     DECIMAL                NOT NULL,
     cod_tipo             DECIMAL                NOT NULL,
-    precio               DECIMAL,
+    precio               DECIMAL(18, 2),
     cantidad             DECIMAL,
-    subtotal             DECIMAL
+    subtotal             DECIMAL(18, 2)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.concepto(
@@ -297,11 +298,11 @@ CREATE TABLE LOS_CHIMICHANGAS.concepto(
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.factura(
-    cod_factura          DECIMAL IDENTITY(1,1)  NOT NULL,
+    cod_factura          DECIMAL                NOT NULL,
     cod_detalle_factura  DECIMAL                NOT NULL,
     cod_cliente          DECIMAL                NOT NULL,
     fecha_factura        DATE,
-    total                DECIMAL
+    total                DECIMAL(18, 2)
 )
 
 
@@ -313,8 +314,8 @@ CREATE TABLE LOS_CHIMICHANGAS.tipo_envio(
 CREATE TABLE LOS_CHIMICHANGAS.detalle_venta(
     cod_detalle_venta     DECIMAL IDENTITY(1,1) NOT NULL,
     cod_publicacion       DECIMAL               NOT NULL,
-    precio                DECIMAL,
-    subtotal              DECIMAL,
+    precio                DECIMAL(18, 2),
+    subtotal              DECIMAL(18, 2),
     cantidad              DECIMAL
 )
 
@@ -337,11 +338,11 @@ CREATE TABLE LOS_CHIMICHANGAS.detalle_pago(
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.venta(
-    cod_venta              DECIMAL IDENTITY(1,1) NOT NULL,
+    cod_venta              DECIMAL               NOT NULL,
     cod_cliente            DECIMAL               NOT NULL,
     cod_detalle_venta      DECIMAL               NOT NULL,
     fecha_hora             DATETIME,
-    total                  DECIMAL
+    total                  DECIMAL(18, 2)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.pago(
@@ -350,7 +351,7 @@ CREATE TABLE LOS_CHIMICHANGAS.pago(
     cod_detalle_pago       DECIMAL        			NOT NULL,
 	cod_medio	           DECIMAL					NOT NULL,
 	fecha_pago	           DATE,
-    importe                DECIMAL
+    importe                DECIMAL(18, 2)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.envio(
@@ -362,7 +363,7 @@ CREATE TABLE LOS_CHIMICHANGAS.envio(
     horario_inicio         DECIMAL,
     horario_fin            DECIMAL,
     fecha_entrega          DATE,
-    costo_envio            DECIMAL
+    costo_envio            DECIMAL(18, 2)
 )
 
 -------------------- Creación de PK ---------------------------
@@ -641,21 +642,7 @@ BEGIN
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p ON m.CLI_USUARIO_DOMICILIO_PROVINCIA = p.nombre
     JOIN LOS_CHIMICHANGAS.localidad AS l ON m.CLI_USUARIO_DOMICILIO_LOCALIDAD = l.nombre AND l.cod_provincia = p.cod_provincia
-	WHERE m.CLI_USUARIO_DOMICILIO_CALLE IS NOT NULL
-
-    --UNION
-
-    --SELECT DISTINCT 
-      --  p.cod_provincia,                       
-      --  m.ALMACEN_CALLE AS calle,               
-      --  m.ALMACEN_NRO_CALLE AS numero,         
-    --    m.ALMACEN_CODIGO AS cod_postal,         
-    --    NULL AS piso,                           
-    --    NULL AS departamento                    
-    --FROM gd_esquema.Maestra AS m
-    --JOIN LOS_CHIMICHANGAS.provincia AS p ON m.ALMACEN_PROVINCIA = p.nombre
-    --JOIN LOS_CHIMICHANGAS.localidad AS l ON m.ALMACEN_Localidad = l.nombre AND l.cod_provincia = p.cod_provincia
-    --WHERE m.ALMACEN_CALLE IS NOT NULL 
+	WHERE m.CLI_USUARIO_DOMICILIO_CALLE IS NOT NULL;
 END
 GO
 
@@ -669,7 +656,7 @@ BEGIN
         d.cod_domicilio, 
         m.VEN_USUARIO_NOMBRE, 
         m.VEN_USUARIO_PASS, 
-        m.VENDEDOR_MAIL
+        m.VENDEDOR_MAIL,
         m.VEN_USUARIO_FECHA_CREACION
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.VEN_USUARIO_DOMICILIO_PROVINCIA
@@ -724,9 +711,6 @@ BEGIN
 END
 GO
 
-
-
-
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_vendedor
 AS
 BEGIN
@@ -734,7 +718,7 @@ BEGIN
     SELECT DISTINCT 
         u.cod_usuario, 
         m.VENDEDOR_RAZON_SOCIAL, 
-        m.VENDEDOR_CUIT, 
+        m.VENDEDOR_CUIT
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.usuario AS u ON (
         u.nombre = VEN_USUARIO_NOMBRE AND
@@ -785,8 +769,10 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_modelo_producto
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.modelo_producto (descripcion)
-    SELECT DISTINCT m.PRODUCTO_MOD_DESCRIPCION
+    INSERT INTO LOS_CHIMICHANGAS.modelo_producto (cod_modelo, descripcion)
+    SELECT DISTINCT 
+        m.PRODUCTO_MOD_CODIGO,
+        m.PRODUCTO_MOD_DESCRIPCION
     FROM gd_esquema.Maestra AS m
     WHERE m.PRODUCTO_MOD_DESCRIPCION IS NOT NULL;
 END
@@ -795,23 +781,23 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_producto
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.producto (cod_subrubro, cod_marca, cod_modelo, descripcion, precio)
-        SELECT DISTINCT 
-        m.PRODUCTO_SUB_RUBRO AS cod_subrubro,
-        mp.cod_marca as cod_marca,
-        m.PRODUCTO_MOD_CODIGO AS cod_modelo,
-        m.PRODUCTO_DESCRIPCION AS descripcion,
-        m.PRODUCTO_PRECIO AS precio
+    INSERT INTO LOS_CHIMICHANGAS.producto (cod_subrubro, cod_marca, cod_modelo, descripcion, codigo, precio)
+    SELECT DISTINCT 
+        sr.cod_subrubro,                       
+        mp.cod_marca,
+        mo.cod_modelo,
+        m.PRODUCTO_DESCRIPCION,
+        m.PRODUCTO_CODIGO,
+        m.PRODUCTO_PRECIO
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.marca_producto AS mp ON m.PRODUCTO_MARCA = mp.descripcion
-    JOIN LOS_CHIMICHANGAS.subrubro AS sr ON m.PRODUCTO_SUB_RUBRO = sr.descripcion
-    JOIN LOS_CHIMICHANGAS.modelo_producto AS mo ON m.PRODUCTO_MOD_CODIGO = mo.cod_modelo
-      WHERE m.PRODUCTO_SUB_RUBRO IS NOT NULL
-      AND m.PRODUCTO_MARCA IS NOT NULL
-      AND m.PRODUCTO_MOD_CODIGO IS NOT NULL
-      AND m.PRODUCTO_DESCRIPCION IS NOT NULL
-      AND m.PRODUCTO_PRECIO IS NOT NULL;
-END
+    JOIN LOS_CHIMICHANGAS.marca_producto AS mp ON mp.descripcion = m.PRODUCTO_MARCA
+    JOIN (
+        SELECT descripcion, MIN(cod_subrubro) AS cod_subrubro
+        FROM LOS_CHIMICHANGAS.subrubro
+        GROUP BY descripcion
+    ) AS sr ON sr.descripcion = m.PRODUCTO_SUB_RUBRO
+    JOIN LOS_CHIMICHANGAS.modelo_producto AS mo ON mo.cod_modelo = m.PRODUCTO_MOD_CODIGO;
+END;
 GO
 
 -- Migración de Almacen y Publicacion
@@ -819,13 +805,14 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_almacen
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.almacen (cod_provincia, descripcion, calle, nro_calle, costo_dia)
+    INSERT INTO LOS_CHIMICHANGAS.almacen (cod_almacen, cod_provincia, descripcion, calle, nro_calle, costo_dia)
     SELECT DISTINCT 
+        m.ALMACEN_CODIGO,
         p.cod_provincia,                     
-        m.ALMACEN_Localidad AS descripcion,   
-        m.ALMACEN_CALLE AS calle,             
-        m.ALMACEN_NRO_CALLE AS nro_calle,     
-        m.ALMACEN_COSTO_DIA_AL AS costo_dia   
+        m.ALMACEN_Localidad,   
+        m.ALMACEN_CALLE,             
+        m.ALMACEN_NRO_CALLE,     
+        m.ALMACEN_COSTO_DIA_AL  
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p      
     ON m.ALMACEN_PROVINCIA = p.nombre    
@@ -836,27 +823,27 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_publicacion
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.publicacion (cod_vendedor, cod_producto, cod_almacen, descripcion, stock, fecha_inicio, fecha_fin, precio, costo_publicacion, porcentaje_venta)
+    INSERT INTO LOS_CHIMICHANGAS.publicacion (cod_publicacion, cod_vendedor, cod_producto, cod_almacen, descripcion, stock, fecha_inicio, fecha_fin, precio, costo_publicacion, porcentaje_venta)
     SELECT DISTINCT 
+        m.PUBLICACION_CODIGO,
         v.cod_vendedor,                   
         p.cod_producto,                   
         a.cod_almacen,                    
-        m.PUBLICACION_DESCRIPCION AS descripcion,   
-        m.PUBLICACION_STOCK AS stock,              
-        m.PUBLICACION_FECHA AS fecha_inicio,       
-        m.PUBLICACION_FECHA_V AS fecha_fin,        
-        m.PUBLICACION_PRECIO AS precio,           
-        m.PUBLICACION_COSTO AS costo_publicacion,  
-        m.PUBLICACION_PORC_VENTA AS porcentaje_venta  
+        m.PUBLICACION_DESCRIPCION,   
+        m.PUBLICACION_STOCK,              
+        m.PUBLICACION_FECHA,       
+        m.PUBLICACION_FECHA_V,        
+        m.PUBLICACION_PRECIO,          
+        m.PUBLICACION_COSTO, 
+        m.PUBLICACION_PORC_VENTA
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.vendedor AS v
-        ON m.VENDEDOR_RAZON_SOCIAL = v.razon_social
-    JOIN LOS_CHIMICHANGAS.producto AS p
-        ON m.PRODUCTO_CODIGO = p.cod_producto
-    JOIN LOS_CHIMICHANGAS.almacen AS a
-        ON m.ALMACEN_CODIGO = a.cod_almacen
+    JOIN LOS_CHIMICHANGAS.vendedor AS v ON v.razon_social = m.VENDEDOR_RAZON_SOCIAL
+    JOIN (SELECT MIN(cod_producto) AS cod_producto, descripcion FROM LOS_CHIMICHANGAS.producto GROUP BY descripcion) AS p
+        ON p.descripcion = m.PRODUCTO_DESCRIPCION
+    JOIN (SELECT MIN(cod_almacen) AS cod_almacen FROM LOS_CHIMICHANGAS.almacen GROUP BY cod_almacen) AS a
+        ON a.cod_almacen = m.ALMACEN_CODIGO
     WHERE m.PUBLICACION_DESCRIPCION IS NOT NULL;
-END
+END;
 GO
 
 -- Migración de Tipo Detalle Factura, Detalle Factura, Concepto y Factura
@@ -878,18 +865,16 @@ BEGIN
     SELECT DISTINCT 
         p.cod_publicacion,                     
         t.cod_tipo,                            
-        m.FACTURA_DET_PRECIO AS precio,        
-        m.FACTURA_DET_CANTIDAD AS cantidad,    
-        m.FACTURA_DET_SUBTOTAL AS subtotal     
+        m.FACTURA_DET_PRECIO,        
+        m.FACTURA_DET_CANTIDAD,    
+        m.FACTURA_DET_SUBTOTAL   
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.publicacion AS p
-        ON m.PUBLICACION_CODIGO = p.cod_publicacion
-    JOIN LOS_CHIMICHANGAS.tipo_detalle_factura AS t
-        ON m.FACTURA_DET_TIPO = t.descripcion
+    JOIN (SELECT MIN(cod_publicacion) AS cod_publicacion FROM LOS_CHIMICHANGAS.publicacion GROUP BY cod_publicacion) AS p
+        ON p.cod_publicacion = m.PUBLICACION_CODIGO
+    JOIN LOS_CHIMICHANGAS.tipo_detalle_factura AS t ON t.descripcion = m.FACTURA_DET_TIPO
     WHERE m.FACTURA_DET_PRECIO IS NOT NULL;
 END
 GO
-
 
 --CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_concepto
 --AS
@@ -915,10 +900,8 @@ BEGIN
         m.FACTURA_FECHA AS fecha_factura,      
         m.FACTURA_TOTAL AS total              
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.detalle_factura AS df
-        ON m.FACTURA_NUMERO = df.cod_detalle_factura
-    JOIN LOS_CHIMICHANGAS.cliente AS c
-        ON m.CLIENTE_DNI = c.dni               
+    JOIN LOS_CHIMICHANGAS.detalle_factura AS df ON df.cod_detalle_factura = m.FACTURA_NUMERO 
+    JOIN LOS_CHIMICHANGAS.cliente AS c ON c.dni = m.CLIENTE_DNI               
     WHERE m.FACTURA_TOTAL IS NOT NULL;
 END
 GO
@@ -1015,13 +998,11 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_medio_de_pago
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.medio_de_pago (cod_tipo_medio_pago, descripcion)
-    SELECT DISTINCT 
-        tmp.cod_tipo_medio_pago,
-        m.PAGO_TIPO_MEDIO_PAGO AS descripcion
+    SELECT DISTINCT tmp.cod_tipo_medio_pago, m.PAGO_MEDIO_PAGO AS descripcion
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp ON m.PAGO_MEDIO_PAGO = tmp.cod_tipo_medio_pago
-    WHERE m.PAGO_TIPO_MEDIO_PAGO IS NOT NULL
-    AND m.PAGO_MEDIO_PAGO IS NOT NULL;
+    JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp 
+        ON m.PAGO_TIPO_MEDIO_PAGO = tmp.descripcion  
+    WHERE m.PAGO_MEDIO_PAGO IS NOT NULL;
 END
 GO
 
@@ -1081,21 +1062,21 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_subrubro               --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_marca_producto         --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_modelo_producto        --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_producto               --NO FUNCIONA ❌ DA 0 (EL ERROR ESTA EN PRODUCTO)
-    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_producto               --FUNCIONA ✅ 
+    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FUNCIONA ✅ 
+    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --FUNCIONA ✅ 
     EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura   --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura        --NO FUNCIONA ❌ DA 0
-    EXEC LOS_CHIMICHANGAS.migrar_factura                --NO FUNCIONA ❌ DA 0
---    EXEC LOS_CHIMICHANGAS.migrar_concepto               --FALTA LA DESCRIPCION (PAB)
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura        --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_factura                --NO FUNCIONA ❌ DA 0 (ERROR, HAY QUE ARREGLARLO)
+--    EXEC LOS_CHIMICHANGAS.migrar_concepto             --FALTA LA DESCRIPCION NO SABEMOS COMO HACERLA (TO DO)
     EXEC LOS_CHIMICHANGAS.migrar_tipo_envio             --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --NO FUNCIONA ❌ DA 0 ERROR ARRASTRADO
     EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago     --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_detalle_pago           --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_venta                  --NO FUNCIONA ❌ DA 0
-    EXEC LOS_CHIMICHANGAS.migrar_pago                   --NO FUNCIONA ❌ DA 0
-    EXEC LOS_CHIMICHANGAS.migrar_envio                  --NO FUNCIONA ❌ DA 0
+    EXEC LOS_CHIMICHANGAS.migrar_venta                  --NO FUNCIONA ❌ DA 0 ERROR ARRASTRADO VER IDENTITY --> funciona mal
+    EXEC LOS_CHIMICHANGAS.migrar_pago                   --NO FUNCIONA ❌ DA 0 ERROR ARRASTRADO
+    EXEC LOS_CHIMICHANGAS.migrar_envio                  --NO FUNCIONA ❌ DA 0 ERROR ARRASTRADO
 END
 
 --EXEC LOS_CHIMICHANGAS.migrar_db 
