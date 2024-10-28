@@ -931,19 +931,18 @@ BEGIN
     FROM gd_esquema.Maestra AS m
         JOIN LOS_CHIMICHANGAS.venta AS v ON v.cod_venta = m.VENTA_CODIGO
         JOIN LOS_CHIMICHANGAS.cliente AS c ON v.cod_cliente = c.cod_cliente
-        JOIN LOS_CHIMICHANGAS.usuario ASS u ON c.cod_usuario = u.cod_usuario
-        JOIN LOS_CHIMICHANGAS.domicilio d ON u.cod_domicilio = d.cod_domicilio
+        JOIN LOS_CHIMICHANGAS.usuario AS u ON c.cod_usuario = u.cod_usuario
+        JOIN LOS_CHIMICHANGAS.domicilio d ON d.cod_domicilio = u.cod_domicilio
         JOIN LOS_CHIMICHANGAS.tipo_envio te ON te.descripcion = m.ENVIO_TIPO
       where m.ENVIO_FECHA_PROGAMADA IS NOT NULL AND 
             m.ENVIO_HORA_INICIO IS NOT NULL AND 
             m.ENVIO_HORA_FIN_INICIO IS NOT NULL AND 
             m.ENVIO_FECHA_ENTREGA IS NOT NULL AND 
-            m.ENVIO_COSTO IS NOT NULL AND 
+            m.ENVIO_COSTO IS NOT NULL 
 END
 GO
 
 -- Migración de Detalle Venta y Venta
-
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_venta
 AS
