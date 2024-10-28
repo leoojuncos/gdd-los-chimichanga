@@ -30,11 +30,11 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.tipo_envio','U') IS NOT NULL
 IF OBJECT_ID('LOS_CHIMICHANGAS.concepto','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.concepto;
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.factura','U') IS NOT NULL
-    DROP TABLE LOS_CHIMICHANGAS.factura;
-
 IF OBJECT_ID('LOS_CHIMICHANGAS.detalle_factura','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.detalle_factura;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.factura','U') IS NOT NULL
+    DROP TABLE LOS_CHIMICHANGAS.factura;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.tipo_detalle_factura','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.tipo_detalle_factura;
@@ -284,6 +284,7 @@ CREATE TABLE LOS_CHIMICHANGAS.detalle_factura(
     cod_detalle_factura  DECIMAL IDENTITY(1,1)  NOT NULL,
     cod_publicacion	     DECIMAL                NOT NULL,
     cod_tipo             DECIMAL                NOT NULL,
+    cod_factura          DECIMAL                NOT NULL,  
     precio               DECIMAL(18, 2),
     cantidad             DECIMAL,
     subtotal             DECIMAL(18, 2)
@@ -299,8 +300,7 @@ CREATE TABLE LOS_CHIMICHANGAS.concepto(
 
 CREATE TABLE LOS_CHIMICHANGAS.factura(
     cod_factura          DECIMAL                NOT NULL,
-    cod_detalle_factura  DECIMAL                NOT NULL,
-    cod_cliente          DECIMAL                NOT NULL,
+    cod_usuario          DECIMAL                NOT NULL,
     fecha_factura        DATE,
     total                DECIMAL(18, 2)
 )
@@ -339,7 +339,7 @@ CREATE TABLE LOS_CHIMICHANGAS.detalle_pago(
 
 CREATE TABLE LOS_CHIMICHANGAS.venta(
     cod_venta              DECIMAL               NOT NULL,
-    cod_cliente            DECIMAL               NOT NULL,
+    cod_usuario            DECIMAL               NOT NULL,
     cod_detalle_venta      DECIMAL               NOT NULL,
     fecha_hora             DATETIME,
     total                  DECIMAL(18, 2)
@@ -508,13 +508,13 @@ ALTER TABLE LOS_CHIMICHANGAS.detalle_factura
 ADD CONSTRAINT fk_detalle_factura_tipo
 FOREIGN KEY (cod_tipo) REFERENCES LOS_CHIMICHANGAS.tipo_detalle_factura(cod_tipo);
 
-ALTER TABLE LOS_CHIMICHANGAS.factura
-ADD CONSTRAINT fk_factura_detalle_factura
-FOREIGN KEY (cod_detalle_factura) REFERENCES LOS_CHIMICHANGAS.detalle_factura(cod_detalle_factura);
+ALTER TABLE LOS_CHIMICHANGAS.detalle_factura
+ADD CONSTRAINT fk_factura
+FOREIGN KEY (cod_factura) REFERENCES LOS_CHIMICHANGAS.factura(cod_factura);
 
 ALTER TABLE LOS_CHIMICHANGAS.factura
-ADD CONSTRAINT fk_factura_cliente
-FOREIGN KEY (cod_cliente) REFERENCES LOS_CHIMICHANGAS.cliente(cod_cliente);
+ADD CONSTRAINT fk_factura_usuario
+FOREIGN KEY (cod_usuario) REFERENCES LOS_CHIMICHANGAS.usuario(cod_usuario);
 
 ALTER TABLE LOS_CHIMICHANGAS.concepto
 ADD CONSTRAINT fk_concepto_detalle_factura
@@ -529,8 +529,8 @@ ADD CONSTRAINT fk_medio_de_pago_tipo_medio
 FOREIGN KEY (cod_tipo_medio_pago) REFERENCES LOS_CHIMICHANGAS.tipo_medio_de_pago(cod_tipo_medio_pago);
 
 ALTER TABLE LOS_CHIMICHANGAS.venta
-ADD CONSTRAINT fk_venta_cliente
-FOREIGN KEY (cod_cliente) REFERENCES LOS_CHIMICHANGAS.cliente(cod_cliente);
+ADD CONSTRAINT fk_venta_usuario_cliente
+FOREIGN KEY (cod_usuario) REFERENCES LOS_CHIMICHANGAS.usuario(cod_usuario);
 
 ALTER TABLE LOS_CHIMICHANGAS.venta
 ADD CONSTRAINT fk_venta_detalle_venta
@@ -858,51 +858,39 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_factura
-AS
-BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.detalle_factura (cod_publicacion, cod_tipo, precio, cantidad, subtotal)
-    SELECT DISTINCT 
-        p.cod_publicacion,                     
-        t.cod_tipo,                            
-        m.FACTURA_DET_PRECIO,        
-        m.FACTURA_DET_CANTIDAD,    
-        m.FACTURA_DET_SUBTOTAL   
-    FROM gd_esquema.Maestra AS m
-    JOIN (SELECT MIN(cod_publicacion) AS cod_publicacion FROM LOS_CHIMICHANGAS.publicacion GROUP BY cod_publicacion) AS p
-        ON p.cod_publicacion = m.PUBLICACION_CODIGO
-    JOIN LOS_CHIMICHANGAS.tipo_detalle_factura AS t ON t.descripcion = m.FACTURA_DET_TIPO
-    WHERE m.FACTURA_DET_PRECIO IS NOT NULL;
-END
-GO
-
---CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_concepto
---AS
---BEGIN
---    INSERT INTO LOS_CHIMICHANGAS.concepto (cod_detalle_factura, descripcion, precio, cantidad)
---    SELECT DISTINCT 
---        df.cod_detalle_factura,                 
---        --NO SE QUE HACER CON LA DESCRIPCION AS descripcion,  
---        df.precio,                              
---        df.cantidad                             
---    FROM LOS_CHIMICHANGAS.detalle_factura AS df
---    WHERE df.cod_detalle_factura IS NOT NULL;
---END
---GO
-
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_factura
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.factura (cod_detalle_factura, cod_cliente, fecha_factura, total)
-    SELECT DISTINCT 
-        df.cod_detalle_factura,               
-        c.cod_cliente,                        
-        m.FACTURA_FECHA AS fecha_factura,      
-        m.FACTURA_TOTAL AS total              
+    INSERT INTO LOS_CHIMICHANGAS.factura (cod_factura, cod_usuario, fecha_factura, total)
+    SELECT DISTINCT
+        m.FACTURA_NUMERO,
+        u.cod_usuario,
+        m.FACTURA_FECHA,
+        m.FACTURA_TOTAL
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.detalle_factura AS df ON df.cod_detalle_factura = m.FACTURA_NUMERO 
-    JOIN LOS_CHIMICHANGAS.cliente AS c ON c.dni = m.CLIENTE_DNI               
-    WHERE m.FACTURA_TOTAL IS NOT NULL;
+             JOIN LOS_CHIMICHANGAS.publicacion as pub on pub.descripcion = m.PUBLICACION_DESCRIPCION
+             JOIN LOS_CHIMICHANGAS.vendedor as v on pub.cod_vendedor = v.cod_vendedor
+             JOIN LOS_CHIMICHANGAS.usuario as u on v.cod_usuario = u.cod_usuario
+    WHERE m.FACTURA_TOTAL IS NOT NULL AND m.FACTURA_NUMERO IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_factura
+AS
+BEGIN
+    INSERT INTO LOS_CHIMICHANGAS.detalle_factura (cod_publicacion, cod_tipo, cod_factura, precio, cantidad, subtotal)
+    SELECT DISTINCT
+        p.cod_publicacion,
+        t.cod_tipo,
+        f.cod_factura,
+        m.FACTURA_DET_PRECIO,
+        m.FACTURA_DET_CANTIDAD,
+        m.FACTURA_DET_SUBTOTAL
+    FROM gd_esquema.Maestra AS m
+    join LOS_CHIMICHANGAS.publicacion as p on p.cod_publicacion = m.PUBLICACION_CODIGO
+    join LOS_CHIMICHANGAS.tipo_detalle_factura as t on t.descripcion = m.FACTURA_DET_TIPO
+    join LOS_CHIMICHANGAS.factura as f on f.cod_factura = m.FACTURA_NUMERO
+    WHERE m.FACTURA_DET_PRECIO IS NOT NULL;
 END
 GO
 
@@ -919,32 +907,33 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_envio -- revisar join venta
-AS
-BEGIN
-    insert into LOS_CHIMICHANGAS.envio (cod_venta, cod_domicilio, cod_tipo, fecha_programada, horario_inicio, horario_fin, fecha_entrega, costo_envio)
-    select distinct
-        v.cod_venta,
-        d.cod_domicilio,
-        te.cod_tipo,
-        m.ENVIO_FECHA_PROGAMADA,
-        m.ENVIO_HORA_INICIO,
-        m.ENVIO_HORA_FIN_INICIO,
-        m.ENVIO_FECHA_ENTREGA,
-        m.ENVIO_COSTO
-    from gd_esquema.Maestra as m
-        join LOS_CHIMICHANGAS.venta as v on v.cod_venta = m.VENTA_CODIGO
-        join LOS_CHIMICHANGAS.cliente c on v.cod_cliente = c.cod_cliente
-        join LOS_CHIMICHANGAS.usuario u on c.cod_usuario = u.cod_usuario
-        join LOS_CHIMICHANGAS.domicilio d on u.cod_domicilio = d.cod_domicilio
-        join LOS_CHIMICHANGAS.tipo_envio te on te.descripcion = m.ENVIO_TIPO
-    where m.ENVIO_FECHA_PROGAMADA is not null
-      and m.ENVIO_HORA_INICIO is not null
-      and m.ENVIO_HORA_FIN_INICIO is not null
-      and m.ENVIO_FECHA_ENTREGA is not null
-      and m.ENVIO_COSTO is not null
-END
-GO
+--LO COMENTO PORQUE DA ERROR DE SYNTAXIS
+--CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_envio -- revisar join venta
+--AS
+--BEGIN
+--    insert into LOS_CHIMICHANGAS.envio (cod_venta, cod_domicilio, cod_tipo, fecha_programada, horario_inicio, horario_fin, fecha_entrega, costo_envio)
+--    select distinct
+--        v.cod_venta,
+--        d.cod_domicilio,
+--        te.cod_tipo,
+--        m.ENVIO_FECHA_PROGAMADA,
+--        m.ENVIO_HORA_INICIO,
+--        m.ENVIO_HORA_FIN_INICIO,
+--        m.ENVIO_FECHA_ENTREGA,
+--        m.ENVIO_COSTO
+--    from gd_esquema.Maestra as m
+--        join LOS_CHIMICHANGAS.venta as v on v.cod_venta = m.VENTA_CODIGO
+--        join LOS_CHIMICHANGAS.cliente c on v.cod_cliente = c.cod_cliente
+--        join LOS_CHIMICHANGAS.usuario u on c.cod_usuario = u.cod_usuario
+--        join LOS_CHIMICHANGAS.domicilio d on u.cod_domicilio = d.cod_domicilio
+--        join LOS_CHIMICHANGAS.tipo_envio te on te.descripcion = m.ENVIO_TIPO
+--    where m.ENVIO_FECHA_PROGAMADA is not null
+--      and m.ENVIO_HORA_INICIO is not null
+--     and m.ENVIO_HORA_FIN_INICIO is not null
+--      and m.ENVIO_FECHA_ENTREGA is not null
+--      and m.ENVIO_COSTO is not null
+--END
+--GO
 
 -- Migración de Detalle Venta y Venta
 
@@ -952,35 +941,57 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_venta
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.detalle_venta (cod_publicacion, precio, subtotal, cantidad)
-    SELECT DISTINCT 
+    SELECT 
         p.cod_publicacion,                  
-        m.VENTA_DET_PRECIO AS precio,       
-        m.VENTA_DET_SUB_TOTAL AS subtotal,  
-        m.VENTA_DET_CANT AS cantidad       
+        m.VENTA_DET_PRECIO,  
+        m.VENTA_DET_SUB_TOTAL,  
+        m.VENTA_DET_CANT
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.publicacion AS p
-        ON m.PUBLICACION_CODIGO = p.cod_publicacion
-    WHERE m.VENTA_DET_PRECIO IS NOT NULL;
+    JOIN LOS_CHIMICHANGAS.publicacion AS p ON  p.cod_publicacion = m.PUBLICACION_CODIGO 
+    WHERE m.VENTA_DET_PRECIO IS NOT NULL AND
+		  m.PUBLICACION_CODIGO IS NOT NULL
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_venta
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.venta (cod_cliente, cod_detalle_venta, fecha_hora, total)
-    SELECT DISTINCT 
-        c.cod_cliente,                      
-        dv.cod_detalle_venta,               
-        m.VENTA_FECHA AS fecha_hora,        
-        m.VENTA_TOTAL AS total              
+    INSERT INTO LOS_CHIMICHANGAS.venta (
+        cod_venta, 
+        cod_usuario, 
+        cod_detalle_venta, 
+        fecha_hora, 
+        total
+    )
+    SELECT DISTINCT
+        m.VENTA_CODIGO,                               -- Usamos el código de venta
+        u.cod_usuario,                                -- Obtenemos el código de usuario
+        dv.cod_detalle_venta,                         -- Obtenemos el detalle de venta
+        m.VENTA_FECHA,                                -- Fecha de la venta
+        m.VENTA_TOTAL                                 -- Total de la venta
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.cliente AS c
-        ON m.CLIENTE_DNI = c.dni           
+    -- Relación con la tabla publicacion para obtener el cod_vendedor
+    JOIN LOS_CHIMICHANGAS.publicacion AS pub 
+        ON pub.descripcion = m.PUBLICACION_DESCRIPCION
+    -- Relación con la tabla vendedor para obtener el cod_usuario
+    JOIN LOS_CHIMICHANGAS.vendedor AS v 
+        ON pub.cod_vendedor = v.cod_vendedor
+    -- Relación con la tabla usuario
+    JOIN LOS_CHIMICHANGAS.usuario AS u 
+        ON v.cod_usuario = u.cod_usuario
+    -- Relación con la tabla detalle_venta usando cantidad, precio y subtotal
     JOIN LOS_CHIMICHANGAS.detalle_venta AS dv
-        ON m.VENTA_CODIGO = dv.cod_detalle_venta  
-    WHERE m.VENTA_TOTAL IS NOT NULL;
+        ON dv.cantidad = m.VENTA_DET_CANT
+        AND dv.precio = m.VENTA_DET_PRECIO
+        AND dv.subtotal = m.VENTA_DET_SUB_TOTAL
+    WHERE m.VENTA_CODIGO IS NOT NULL
+      AND m.VENTA_FECHA IS NOT NULL
+      AND m.VENTA_TOTAL IS NOT NULL;
 END
 GO
+
+
+
 
 -- Migración de Tipo Medio de Pago, Medio de Pago, Detalle Pago y Pago *(jaoacobanana)
 
@@ -1062,15 +1073,14 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_subrubro               --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_marca_producto         --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_modelo_producto        --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_producto               --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura   --FUNCIONA ✅ 
+    EXEC LOS_CHIMICHANGAS.migrar_producto               --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura   --FUNCIONA ✅ <-- Es CONCEPTO
+    EXEC LOS_CHIMICHANGAS.migrar_factura                --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_detalle_factura        --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_factura                --NO FUNCIONA ❌ DA 0 (ERROR, HAY QUE ARREGLARLO)
---    EXEC LOS_CHIMICHANGAS.migrar_concepto             --FALTA LA DESCRIPCION NO SABEMOS COMO HACERLA (TO DO)
     EXEC LOS_CHIMICHANGAS.migrar_tipo_envio             --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --NO FUNCIONA ❌ DA 0 ERROR ARRASTRADO
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --FUNCIONA ✅ 
     EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago     --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          --FUNCIONA ✅
     EXEC LOS_CHIMICHANGAS.migrar_detalle_pago           --FUNCIONA ✅
