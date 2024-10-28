@@ -450,7 +450,6 @@ GO
 
 -------------------- Creación de FK ---------------------------
 
-
 ALTER TABLE LOS_CHIMICHANGAS.localidad
 ADD CONSTRAINT fk_localidad_provincia
 FOREIGN KEY (cod_provincia) REFERENCES LOS_CHIMICHANGAS.provincia(cod_provincia);
@@ -538,10 +537,6 @@ FOREIGN KEY (cod_tipo_medio_pago) REFERENCES LOS_CHIMICHANGAS.tipo_medio_de_pago
 ALTER TABLE LOS_CHIMICHANGAS.venta
 ADD CONSTRAINT fk_venta_cliente
 FOREIGN KEY (cod_cliente) REFERENCES LOS_CHIMICHANGAS.cliente(cod_cliente);
-
---ALTER TABLE LOS_CHIMICHANGAS.venta
---ADD CONSTRAINT fk_venta_detalle_venta
---FOREIGN KEY (cod_detalle_venta) REFERENCES LOS_CHIMICHANGAS.detalle_venta(cod_detalle_venta);
 
 ALTER TABLE LOS_CHIMICHANGAS.pago
 ADD CONSTRAINT fk_pago_venta
