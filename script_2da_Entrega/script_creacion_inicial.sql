@@ -26,7 +26,6 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.tipo_medio_de_pago','U') IS NOT NULL
     
 IF OBJECT_ID('LOS_CHIMICHANGAS.venta','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.venta;
-    
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.tipo_envio','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.tipo_envio;
@@ -1045,30 +1044,31 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_db 
 AS
 BEGIN
-    EXEC LOS_CHIMICHANGAS.migrar_provincia              --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_localidad              --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_domicilio              --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_usuario                --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_cliente                --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_vendedor               --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_rubro                  --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_subrubro               --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_marca_producto         --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_modelo_producto        --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_producto               --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_almacen                --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_publicacion            --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura   --FUNCIONA ✅ <-- Es CONCEPTO
-    EXEC LOS_CHIMICHANGAS.migrar_factura                --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura        --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_envio             --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_venta                  --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta          --FUNCIONA ✅ 
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago     --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_detalle_pago           --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_pago                   --FUNCIONA ✅
-    EXEC LOS_CHIMICHANGAS.migrar_envio                  --FUNCIONA ✅
+    EXEC LOS_CHIMICHANGAS.migrar_provincia              
+    EXEC LOS_CHIMICHANGAS.migrar_localidad              
+    EXEC LOS_CHIMICHANGAS.migrar_domicilio              
+    EXEC LOS_CHIMICHANGAS.migrar_usuario                
+    EXEC LOS_CHIMICHANGAS.migrar_cliente                
+    EXEC LOS_CHIMICHANGAS.migrar_vendedor               
+    EXEC LOS_CHIMICHANGAS.migrar_rubro                  
+    EXEC LOS_CHIMICHANGAS.migrar_subrubro               
+    EXEC LOS_CHIMICHANGAS.migrar_marca_producto 
+    EXEC LOS_CHIMICHANGAS.migrar_modelo_producto
+    EXEC LOS_CHIMICHANGAS.migrar_producto       
+    EXEC LOS_CHIMICHANGAS.migrar_almacen        
+    EXEC LOS_CHIMICHANGAS.migrar_publicacion    
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura 
+    EXEC LOS_CHIMICHANGAS.migrar_factura              
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_factura     
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_envio         
+    EXEC LOS_CHIMICHANGAS.migrar_venta                  
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_venta        
+    EXEC LOS_CHIMICHANGAS.migrar_tipo_medio_de_pago     
+    EXEC LOS_CHIMICHANGAS.migrar_medio_de_pago          
+    EXEC LOS_CHIMICHANGAS.migrar_detalle_pago           
+    EXEC LOS_CHIMICHANGAS.migrar_pago                   
+    EXEC LOS_CHIMICHANGAS.migrar_envio                  
 END
+GO
 
 EXEC LOS_CHIMICHANGAS.migrar_db 
