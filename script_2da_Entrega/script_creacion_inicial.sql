@@ -69,11 +69,11 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.vendedor','U') IS NOT NULL
 IF OBJECT_ID('LOS_CHIMICHANGAS.cliente','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.cliente;
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.usuario','U') IS NOT NULL
-    DROP TABLE LOS_CHIMICHANGAS.usuario;
-
 IF OBJECT_ID('LOS_CHIMICHANGAS.domicilio','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.domicilio;
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.usuario','U') IS NOT NULL
+DROP TABLE LOS_CHIMICHANGAS.usuario;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.localidad','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.localidad;
@@ -191,7 +191,8 @@ CREATE TABLE LOS_CHIMICHANGAS.localidad(
 
 CREATE TABLE LOS_CHIMICHANGAS.domicilio(
     cod_domicilio       DECIMAL IDENTITY(1,1)	NOT NULL,
-    cod_provincia       DECIMAL				    NOT NULL,
+    cod_localidad       DECIMAL				    NOT NULL,
+    cod_usuario         DECIMAL				    NOT NULL,
     calle               NVARCHAR(50),
     numero              NVARCHAR(50),
     cod_postal          NVARCHAR(50),           
@@ -201,7 +202,7 @@ CREATE TABLE LOS_CHIMICHANGAS.domicilio(
 
 CREATE TABLE LOS_CHIMICHANGAS.usuario(
 	cod_usuario			DECIMAL IDENTITY(1,1)	NOT NULL,
-    cod_domicilio       DECIMAL		            NOT NULL,
+--  cod_domicilio       DECIMAL		            NOT NULL,
     nombre              NVARCHAR(50),			
     contrasenia         NVARCHAR(50),
     mail                NVARCHAR(50),
@@ -455,12 +456,12 @@ ADD CONSTRAINT fk_localidad_provincia
 FOREIGN KEY (cod_provincia) REFERENCES LOS_CHIMICHANGAS.provincia(cod_provincia);
 
 ALTER TABLE LOS_CHIMICHANGAS.domicilio
-ADD CONSTRAINT fk_domicilio_provincia
-FOREIGN KEY (cod_provincia) REFERENCES LOS_CHIMICHANGAS.provincia(cod_provincia);
+ADD CONSTRAINT fk_domicilio_localidad
+FOREIGN KEY (cod_localidad) REFERENCES LOS_CHIMICHANGAS.localidad(cod_localidad);
 
-ALTER TABLE LOS_CHIMICHANGAS.usuario
-ADD CONSTRAINT fk_usuario_domicilio
-FOREIGN KEY (cod_domicilio) REFERENCES LOS_CHIMICHANGAS.domicilio(cod_domicilio);
+ALTER TABLE LOS_CHIMICHANGAS.domicilio
+ADD CONSTRAINT fk_domicilio_usuario
+FOREIGN KEY (cod_usuario) REFERENCES LOS_CHIMICHANGAS.usuario(cod_usuario);
 
 ALTER TABLE LOS_CHIMICHANGAS.cliente
 ADD CONSTRAINT fk_cliente_usuario
@@ -619,9 +620,10 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_domicilio
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.domicilio (cod_provincia, calle, numero, cod_postal, piso, departamento)
+    INSERT INTO LOS_CHIMICHANGAS.domicilio (cod_localidad, cod_usuario, calle, numero, cod_postal, piso, departamento)
     SELECT DISTINCT 
-		p.cod_provincia,
+		l.cod_localidad,
+        u.cod_usuario,
 		m.VEN_USUARIO_DOMICILIO_CALLE, 
 		m.VEN_USUARIO_DOMICILIO_NRO_CALLE,
 		m.VEN_USUARIO_DOMICILIO_CP,
@@ -630,12 +632,20 @@ BEGIN
     FROM gd_esquema.Maestra AS m
 	JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.VEN_USUARIO_DOMICILIO_PROVINCIA
     JOIN LOS_CHIMICHANGAS.localidad AS l ON m.VEN_USUARIO_DOMICILIO_LOCALIDAD = l.nombre AND l.cod_provincia = p.cod_provincia
-    WHERE m.VEN_USUARIO_DOMICILIO_CALLE IS NOT NULL
+    JOIN LOS_CHIMICHANGAS.usuario AS u ON (
+        u.nombre = m.VEN_USUARIO_NOMBRE AND
+        u.contrasenia = m.VEN_USUARIO_PASS AND
+        u.fecha_creacion = m.VEN_USUARIO_FECHA_CREACION AND
+		u.mail = m.VENDEDOR_MAIL
+    ) 
+    WHERE m.VEN_USUARIO_DOMICILIO_CALLE IS NOT NULL AND
+		  m.VEN_USUARIO_NOMBRE IS NOT NULL
 
 	UNION
 
     SELECT DISTINCT 
-        p.cod_provincia,                              
+        l.cod_localidad,
+        u.cod_usuario,                              
         m.CLI_USUARIO_DOMICILIO_CALLE AS calle,       
         m.CLI_USUARIO_DOMICILIO_NRO_CALLE AS numero,  
         m.CLI_USUARIO_DOMICILIO_CP AS cod_postal,     
@@ -644,7 +654,14 @@ BEGIN
     FROM gd_esquema.Maestra AS m
     JOIN LOS_CHIMICHANGAS.provincia AS p ON m.CLI_USUARIO_DOMICILIO_PROVINCIA = p.nombre
     JOIN LOS_CHIMICHANGAS.localidad AS l ON m.CLI_USUARIO_DOMICILIO_LOCALIDAD = l.nombre AND l.cod_provincia = p.cod_provincia
-	WHERE m.CLI_USUARIO_DOMICILIO_CALLE IS NOT NULL;
+    JOIN LOS_CHIMICHANGAS.usuario AS u ON (
+        u.nombre = CLI_USUARIO_NOMBRE AND
+        u.contrasenia = CLI_USUARIO_PASS AND
+        u.fecha_creacion = CLI_USUARIO_FECHA_CREACION AND
+		u.mail = CLIENTE_MAIL
+    )
+	WHERE m.CLI_USUARIO_DOMICILIO_CALLE IS NOT NULL AND
+		  m.CLI_USUARIO_NOMBRE IS NOT NULL
 END
 GO
 
@@ -653,42 +670,24 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_usuario
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.usuario (cod_domicilio, nombre, contrasenia, mail, fecha_creacion)
+    INSERT INTO LOS_CHIMICHANGAS.usuario (nombre, contrasenia, mail, fecha_creacion)
     SELECT DISTINCT 
-        d.cod_domicilio, 
         m.VEN_USUARIO_NOMBRE, 
         m.VEN_USUARIO_PASS, 
         m.VENDEDOR_MAIL,
         m.VEN_USUARIO_FECHA_CREACION
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.VEN_USUARIO_DOMICILIO_PROVINCIA
-    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.nombre = m.VEN_USUARIO_DOMICILIO_LOCALIDAD
-    JOIN LOS_CHIMICHANGAS.domicilio AS d ON (
-        d.calle = VEN_USUARIO_DOMICILIO_CALLE AND
-        d.numero = VEN_USUARIO_DOMICILIO_NRO_CALLE AND
-        d.cod_postal = VEN_USUARIO_DOMICILIO_CP AND
-        d.piso = VEN_USUARIO_DOMICILIO_PISO AND
-        d.departamento = VEN_USUARIO_DOMICILIO_DEPTO
-    )
+	WHERE m.VEN_USUARIO_NOMBRE IS NOT NULL
 	
 	UNION
 
     SELECT DISTINCT 
-        d.cod_domicilio, 
         m.CLI_USUARIO_NOMBRE,
         m.CLI_USUARIO_PASS,
         m.CLIENTE_MAIL,
         m.CLI_USUARIO_FECHA_CREACION
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.nombre = m.CLI_USUARIO_DOMICILIO_PROVINCIA
-    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.nombre = m.CLI_USUARIO_DOMICILIO_LOCALIDAD
-    JOIN LOS_CHIMICHANGAS.domicilio AS d ON (
-        d.calle = CLI_USUARIO_DOMICILIO_CALLE AND
-        d.numero = CLI_USUARIO_DOMICILIO_NRO_CALLE AND
-        d.cod_postal = CLI_USUARIO_DOMICILIO_CP AND
-        d.piso = CLI_USUARIO_DOMICILIO_PISO AND
-        d.departamento = CLI_USUARIO_DOMICILIO_DEPTO
-    )
+	WHERE m.CLI_USUARIO_NOMBRE IS NOT NULL
 END
 GO
 
@@ -898,7 +897,6 @@ GO
 
 -- Migración de Tipo Envio y Envio (Liam)
 
-
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_envio
 AS
 BEGIN
@@ -948,7 +946,7 @@ BEGIN
         VENTA_FECHA,
         VENTA_TOTAL
         FROM gd_esquema.Maestra m
-        JOIN LOS_CHIMICHANGAS.Cliente c ON (
+        JOIN LOS_CHIMICHANGAS.cliente c ON (
             c.nombre = m.CLIENTE_NOMBRE AND 
             c.apellido = m.CLIENTE_APELLIDO AND 
             c.dni = m.CLIENTE_DNI)
@@ -1040,9 +1038,9 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_db
 AS
 BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_provincia              
-    EXEC LOS_CHIMICHANGAS.migrar_localidad              
+    EXEC LOS_CHIMICHANGAS.migrar_localidad    
+    EXEC LOS_CHIMICHANGAS.migrar_usuario                          
     EXEC LOS_CHIMICHANGAS.migrar_domicilio              
-    EXEC LOS_CHIMICHANGAS.migrar_usuario                
     EXEC LOS_CHIMICHANGAS.migrar_cliente                
     EXEC LOS_CHIMICHANGAS.migrar_vendedor               
     EXEC LOS_CHIMICHANGAS.migrar_rubro                  
