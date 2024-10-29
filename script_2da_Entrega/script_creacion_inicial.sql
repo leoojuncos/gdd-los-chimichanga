@@ -30,17 +30,14 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.venta','U') IS NOT NULL
 IF OBJECT_ID('LOS_CHIMICHANGAS.tipo_envio','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.tipo_envio;
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.concepto','U') IS NOT NULL
-    DROP TABLE LOS_CHIMICHANGAS.concepto;
-
 IF OBJECT_ID('LOS_CHIMICHANGAS.detalle_factura','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.detalle_factura;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.factura','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.factura;
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.tipo_detalle_factura','U') IS NOT NULL
-    DROP TABLE LOS_CHIMICHANGAS.tipo_detalle_factura;
+IF OBJECT_ID('LOS_CHIMICHANGAS.concepto','U') IS NOT NULL
+    DROP TABLE LOS_CHIMICHANGAS.concepto;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.publicacion','U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.publicacion;
@@ -124,17 +121,14 @@ DROP PROCEDURE LOS_CHIMICHANGAS.migrar_almacen;
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_publicacion', 'P') IS NOT NULL
 DROP PROCEDURE LOS_CHIMICHANGAS.migrar_publicacion;
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_tipo_detalle_factura', 'P') IS NOT NULL
-DROP PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_detalle_factura;
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_concepto', 'P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrar_concepto;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_detalle_factura', 'P') IS NOT NULL
 DROP PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_factura;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_factura', 'P') IS NOT NULL
 DROP PROCEDURE LOS_CHIMICHANGAS.migrar_factura;
-
-IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_concepto', 'P') IS NOT NULL
-DROP PROCEDURE LOS_CHIMICHANGAS.migrar_concepto;
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_tipo_envio', 'P') IS NOT NULL
 DROP PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_envio;
@@ -202,7 +196,6 @@ CREATE TABLE LOS_CHIMICHANGAS.domicilio(
 
 CREATE TABLE LOS_CHIMICHANGAS.usuario(
 	cod_usuario			DECIMAL IDENTITY(1,1)	NOT NULL,
---  cod_domicilio       DECIMAL		            NOT NULL,
     nombre              NVARCHAR(50),			
     contrasenia         NVARCHAR(50),
     mail                NVARCHAR(50),
@@ -279,27 +272,19 @@ CREATE TABLE LOS_CHIMICHANGAS.publicacion(
     porcentaje_venta   DECIMAL(18, 2)
 )
 
-CREATE TABLE LOS_CHIMICHANGAS.tipo_detalle_factura(
-    cod_tipo		  DECIMAL IDENTITY(1,1)    	NOT NULL,
+CREATE TABLE LOS_CHIMICHANGAS.concepto(
+    cod_concepto	  DECIMAL IDENTITY(1,1)    	NOT NULL,
     descripcion       NVARCHAR(50)
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.detalle_factura(
     cod_detalle_factura  DECIMAL IDENTITY(1,1)  NOT NULL,
     cod_publicacion	     DECIMAL                NOT NULL,
-    cod_tipo             DECIMAL                NOT NULL,
+    cod_concepto         DECIMAL                NOT NULL,
     cod_factura          DECIMAL                NOT NULL,  
     precio               DECIMAL(18, 2),
     cantidad             DECIMAL,
     subtotal             DECIMAL(18, 2)
-)
-
-CREATE TABLE LOS_CHIMICHANGAS.concepto(
-    cod_concepto         DECIMAL IDENTITY(1,1)  NOT NULL,
-    cod_detalle_factura  DECIMAL                NOT NULL,
-    descripcion          NVARCHAR(50),
-    precio               DECIMAL,
-    cantidad             DECIMAL
 )
 
 CREATE TABLE LOS_CHIMICHANGAS.factura(
@@ -308,7 +293,6 @@ CREATE TABLE LOS_CHIMICHANGAS.factura(
     fecha_factura        DATE,
     total                DECIMAL(18, 2)
 )
-
 
 CREATE TABLE LOS_CHIMICHANGAS.tipo_envio(
     cod_tipo              DECIMAL IDENTITY(1,1) NOT NULL, 
@@ -411,17 +395,14 @@ ADD CONSTRAINT pk_almacen PRIMARY KEY (cod_almacen);
 ALTER TABLE LOS_CHIMICHANGAS.publicacion
 ADD CONSTRAINT pk_publicacion PRIMARY KEY (cod_publicacion);
 
-ALTER TABLE LOS_CHIMICHANGAS.tipo_detalle_factura
-ADD CONSTRAINT pk_tipo_detalle_factura PRIMARY KEY (cod_tipo);
+ALTER TABLE LOS_CHIMICHANGAS.concepto
+ADD CONSTRAINT pk_concepto PRIMARY KEY (cod_concepto);
 
 ALTER TABLE LOS_CHIMICHANGAS.detalle_factura
 ADD CONSTRAINT pk_detalle_factura PRIMARY KEY (cod_detalle_factura);
 
 ALTER TABLE LOS_CHIMICHANGAS.factura
 ADD CONSTRAINT pk_factura PRIMARY KEY (cod_factura);
-
-ALTER TABLE LOS_CHIMICHANGAS.concepto
-ADD CONSTRAINT pk_concepto PRIMARY KEY (cod_concepto);
 
 ALTER TABLE LOS_CHIMICHANGAS.tipo_envio
 ADD CONSTRAINT pk_tipo_envio PRIMARY KEY (cod_tipo);
@@ -508,8 +489,8 @@ ADD CONSTRAINT fk_detalle_factura_publicacion
 FOREIGN KEY (cod_publicacion) REFERENCES LOS_CHIMICHANGAS.publicacion(cod_publicacion);
 
 ALTER TABLE LOS_CHIMICHANGAS.detalle_factura
-ADD CONSTRAINT fk_detalle_factura_tipo
-FOREIGN KEY (cod_tipo) REFERENCES LOS_CHIMICHANGAS.tipo_detalle_factura(cod_tipo);
+ADD CONSTRAINT fk_detalle_factura_concepto
+FOREIGN KEY (cod_concepto) REFERENCES LOS_CHIMICHANGAS.concepto(cod_concepto);
 
 ALTER TABLE LOS_CHIMICHANGAS.detalle_factura
 ADD CONSTRAINT fk_factura
@@ -518,10 +499,6 @@ FOREIGN KEY (cod_factura) REFERENCES LOS_CHIMICHANGAS.factura(cod_factura);
 ALTER TABLE LOS_CHIMICHANGAS.factura
 ADD CONSTRAINT fk_factura_usuario
 FOREIGN KEY (cod_usuario) REFERENCES LOS_CHIMICHANGAS.usuario(cod_usuario);
-
-ALTER TABLE LOS_CHIMICHANGAS.concepto
-ADD CONSTRAINT fk_concepto_detalle_factura
-FOREIGN KEY (cod_detalle_factura) REFERENCES LOS_CHIMICHANGAS.detalle_factura(cod_detalle_factura);
 
 ALTER TABLE LOS_CHIMICHANGAS.detalle_venta
 ADD CONSTRAINT fk_detalle_venta_publicacion
@@ -847,12 +824,12 @@ BEGIN
 END;
 GO
 
--- Migración de Tipo Detalle Factura, Detalle Factura, Concepto y Factura
+-- Migración de Concepto, Detalle Factura y Factura
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_detalle_factura
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_concepto
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.tipo_detalle_factura (descripcion)
+    INSERT INTO LOS_CHIMICHANGAS.concepto (descripcion)
     SELECT DISTINCT FACTURA_DET_TIPO
     FROM gd_esquema.Maestra
     WHERE FACTURA_DET_TIPO IS NOT NULL;
@@ -879,23 +856,23 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_detalle_factura
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.detalle_factura (cod_publicacion, cod_tipo, cod_factura, precio, cantidad, subtotal)
+    INSERT INTO LOS_CHIMICHANGAS.detalle_factura (cod_publicacion, cod_concepto, cod_factura, precio, cantidad, subtotal)
     SELECT DISTINCT
         p.cod_publicacion,
-        t.cod_tipo,
+        c.cod_concepto,
         f.cod_factura,
         m.FACTURA_DET_PRECIO,
         m.FACTURA_DET_CANTIDAD,
         m.FACTURA_DET_SUBTOTAL
     FROM gd_esquema.Maestra AS m
     join LOS_CHIMICHANGAS.publicacion as p on p.cod_publicacion = m.PUBLICACION_CODIGO
-    join LOS_CHIMICHANGAS.tipo_detalle_factura as t on t.descripcion = m.FACTURA_DET_TIPO
+    join LOS_CHIMICHANGAS.concepto as c on c.descripcion = m.FACTURA_DET_TIPO
     join LOS_CHIMICHANGAS.factura as f on f.cod_factura = m.FACTURA_NUMERO
     WHERE m.FACTURA_DET_PRECIO IS NOT NULL;
 END
 GO
 
--- Migración de Tipo Envio y Envio (Liam)
+-- Migración de Tipo Envio y Envio
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_tipo_envio
 AS
@@ -1050,7 +1027,7 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_producto       
     EXEC LOS_CHIMICHANGAS.migrar_almacen        
     EXEC LOS_CHIMICHANGAS.migrar_publicacion    
-    EXEC LOS_CHIMICHANGAS.migrar_tipo_detalle_factura 
+    EXEC LOS_CHIMICHANGAS.migrar_concepto 
     EXEC LOS_CHIMICHANGAS.migrar_factura              
     EXEC LOS_CHIMICHANGAS.migrar_detalle_factura     
     EXEC LOS_CHIMICHANGAS.migrar_tipo_envio         
