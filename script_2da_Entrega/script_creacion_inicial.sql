@@ -924,7 +924,7 @@ BEGIN
         JOIN LOS_CHIMICHANGAS.venta AS v ON v.cod_venta = m.VENTA_CODIGO
         JOIN LOS_CHIMICHANGAS.cliente AS c ON v.cod_cliente = c.cod_cliente
         JOIN LOS_CHIMICHANGAS.usuario AS u ON c.cod_usuario = u.cod_usuario
-        JOIN LOS_CHIMICHANGAS.domicilio d ON d.cod_domicilio = u.cod_domicilio
+        JOIN LOS_CHIMICHANGAS.domicilio d ON d.cod_usuario = u.cod_usuario
         JOIN LOS_CHIMICHANGAS.tipo_envio te ON te.descripcion = m.ENVIO_TIPO
       where m.ENVIO_FECHA_PROGAMADA IS NOT NULL AND 
             m.ENVIO_HORA_INICIO IS NOT NULL AND 
