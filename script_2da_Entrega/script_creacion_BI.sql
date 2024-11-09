@@ -78,6 +78,13 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_todo','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_todo
 GO
 -------------------- Eliminación de Views ---------------------------
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PROMEDIO_TIEMPO_PUBLICACIONES','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_TIEMPO_PUBLICACIONES
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL
+GO
 
 -------------------- Creación de tablas ---------------------------
 
@@ -140,7 +147,8 @@ CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION (
                                                         tiempo_id INTEGER NOT NULL,
                                                         marca_id INTEGER NOT NULL,
                                                         fecha_inicio DATE,
-                                                        fecha_fin DATE
+                                                        fecha_fin DATE,
+                                                        stock_inicial INTEGER
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA (
@@ -307,32 +315,24 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO
 AS
 BEGIN
     INSERT INTO BI_D_SUBRUBRO(descripcion)
-    (SELECT distinct descripcion FROM LOS_CHIMICHANGAS.subrubro)
-end
-go
+    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.subrubro;
+END
+GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_MARCA
 AS
 BEGIN
     INSERT INTO BI_D_MARCA(descripcion)
-    (SELECT distinct descripcion FROM LOS_CHIMICHANGAS.marca_producto)
-end
-go
+    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.marca_producto;
+END
+GO
 
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_RANGO_ETARIO
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO(rango_etario_desc)
-    VALUES ('<25')
-    INSERT INTO BI_D_RANGO_ETARIO(rango_etario_desc)
-    VALUES ('25-35')
-    INSERT INTO BI_D_RANGO_ETARIO(rango_etario_desc)
-    VALUES ('35-50')
-    INSERT INTO BI_D_RANGO_ETARIO(rango_etario_desc)
-    VALUES ('>50')
-    INSERT INTO BI_D_RANGO_ETARIO(rango_etario_desc)
-    VALUES ('DESCONOCIDO')
+    VALUES ('<25'), ('25-35'), ('35-50'), ('>50'), ('DESCONOCIDO');
 END
 GO
 
@@ -340,13 +340,7 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_HORARIO_VENTAS
 AS
 BEGIN
     INSERT INTO BI_D_HORARIO_VENTAS(rango_horario)
-    VALUES ('00:00 - 06:00')
-    INSERT INTO BI_D_HORARIO_VENTAS(rango_horario)
-    VALUES ('06:00 - 12:00')
-    INSERT INTO BI_D_HORARIO_VENTAS(rango_horario)
-    VALUES ('12:00 - 18:00')
-    INSERT INTO BI_D_HORARIO_VENTAS(rango_horario)
-    VALUES ('18:00 - 24:00')
+    VALUES ('00:00 - 06:00'), ('06:00 - 12:00'), ('12:00 - 18:00'), ('18:00 - 24:00');
 END
 GO
 
@@ -354,9 +348,9 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_UBICACION
 AS
 BEGIN
     INSERT INTO BI_D_UBICACION(ubicacion_provincia, ubicacion_localidad)
-        (SELECT distinct p.nombre, l.nombre
-         FROM LOS_CHIMICHANGAS.Localidad as l
-                  JOIN LOS_CHIMICHANGAS.Provincia p ON p.cod_provincia = l.cod_provincia)
+    SELECT DISTINCT p.nombre, l.nombre
+    FROM LOS_CHIMICHANGAS.Localidad AS l
+             JOIN LOS_CHIMICHANGAS.Provincia p ON p.cod_provincia = l.cod_provincia;
 END
 GO
 
@@ -364,58 +358,82 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO
 AS
 BEGIN
     INSERT INTO BI_D_TIEMPO(tiempo_anio, tiempo_cuatrimestre, tiempo_mes)
-        (SELECT distinct YEAR(fecha_factura), DATEPART(QUARTER, fecha_factura), MONTH(fecha_factura)
-         FROM LOS_CHIMICHANGAS.factura
-         GROUP BY YEAR(fecha_factura), DATEPART(QUARTER, fecha_factura), MONTH(fecha_factura)
-
-         UNION
-
-         SELECT distinct YEAR(fecha_pago), DATEPART(QUARTER, fecha_pago), MONTH(fecha_pago)
-         FROM LOS_CHIMICHANGAS.pago
-         GROUP BY YEAR(fecha_pago), DATEPART(QUARTER, fecha_pago), MONTH(fecha_pago)
-
-         UNION
-
-         SELECT distinct YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada)
-         FROM LOS_CHIMICHANGAS.envio
-         GROUP BY YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada))
-
-         UNION
-
-         SELECT distinct YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio)
-         FROM LOS_CHIMICHANGAS.publicacion
-         GROUP BY YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio)
+    SELECT DISTINCT YEAR(fecha_factura), DATEPART(QUARTER, fecha_factura), MONTH(fecha_factura)
+    FROM LOS_CHIMICHANGAS.factura
+    UNION
+    SELECT DISTINCT YEAR(fecha_pago), DATEPART(QUARTER, fecha_pago), MONTH(fecha_pago)
+    FROM LOS_CHIMICHANGAS.pago
+    UNION
+    SELECT DISTINCT YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada)
+    FROM LOS_CHIMICHANGAS.envio
+    UNION
+    SELECT DISTINCT YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio)
+    FROM LOS_CHIMICHANGAS.publicacion;
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION
 AS
 BEGIN
-    INSERT INTO BI_HECHOS_PUBLICACION (subrubro_id, tiempo_id, marca_id, fecha_inicio, fecha_fin)
-        (SELECT distinct s.cod_subrubro, t.tiempo_id, m.cod_marca, pub.fecha_inicio, pub.fecha_fin
-         from LOS_CHIMICHANGAS.subrubro s join LOS_CHIMICHANGAS.producto p on s.cod_subrubro = p.cod_subrubro
-                                          join LOS_CHIMICHANGAS.marca_producto m on p.cod_marca = m.cod_marca
-                                          join LOS_CHIMICHANGAS.publicacion pub on pub.cod_producto = p.cod_producto
-                                          join LOS_CHIMICHANGAS.BI_D_TIEMPO t on t.tiempo_anio = YEAR(fecha_inicio) and t.tiempo_cuatrimestre = DATEPART(QUARTER, fecha_inicio) and t.tiempo_mes = MONTH(fecha_inicio)
-        )
-end
-go
+    INSERT INTO BI_HECHOS_PUBLICACION (subrubro_id, tiempo_id, marca_id, fecha_inicio, fecha_fin, stock_inicial)
+    SELECT DISTINCT
+        s.subrubro_id,
+        t.tiempo_id,
+        m.marca_id,
+        pub.fecha_inicio,
+        pub.fecha_fin,
+        pub.stock
+    FROM LOS_CHIMICHANGAS.subrubro sub
+             JOIN LOS_CHIMICHANGAS.producto p ON sub.cod_subrubro = p.cod_subrubro
+             JOIN LOS_CHIMICHANGAS.marca_producto mar ON p.cod_marca = mar.cod_marca
+             JOIN LOS_CHIMICHANGAS.publicacion pub ON pub.cod_producto = p.cod_producto
+             JOIN LOS_CHIMICHANGAS.BI_D_SUBRUBRO s ON sub.descripcion = s.descripcion
+             JOIN LOS_CHIMICHANGAS.BI_D_MARCA m ON mar.descripcion = m.descripcion
+             JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON t.tiempo_anio = YEAR(pub.fecha_inicio)
+        AND t.tiempo_cuatrimestre = DATEPART(QUARTER, pub.fecha_inicio)
+        AND t.tiempo_mes = MONTH(pub.fecha_inicio);
+END
+GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_todo
 AS
 BEGIN
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_UBICACION
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_RANGO_ETARIO
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_HORARIO_VENTAS
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_MARCA
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO
-    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION
-end
-go
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_UBICACION;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_RANGO_ETARIO;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_HORARIO_VENTAS;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_MARCA;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION;
+END
+GO
 
 EXEC LOS_CHIMICHANGAS.migrar_todo
-go
-
+GO
 
 -------------------- Views ---------------------------
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_TIEMPO_PUBLICACIONES AS
+SELECT
+    s.descripcion AS subrubro,
+    t.tiempo_anio AS anio,
+    t.tiempo_cuatrimestre AS cuatrimestre,
+    AVG(DATEDIFF(day, pub.fecha_inicio, pub.fecha_fin)) AS tiempo_promedio
+FROM
+    LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION pub
+        JOIN LOS_CHIMICHANGAS.BI_D_SUBRUBRO s ON pub.subrubro_id = s.subrubro_id
+        JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON pub.tiempo_id = t.tiempo_id
+GROUP BY
+    s.descripcion, t.tiempo_anio, t.tiempo_cuatrimestre;
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL AS
+SELECT
+    m.descripcion AS marca,
+    YEAR(pub.fecha_inicio) AS anio,
+    AVG(pub.stock_inicial) AS promedio_stock_inicial
+FROM
+    LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION pub
+        JOIN LOS_CHIMICHANGAS.BI_D_MARCA m ON pub.marca_id = m.marca_id
+GROUP BY
+    m.descripcion, YEAR(pub.fecha_inicio);
+GO
