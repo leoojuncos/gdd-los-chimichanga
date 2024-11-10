@@ -49,7 +49,23 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.BI_D_CONCEPTO', 'U') IS NOT NULL
     DROP TABLE LOS_CHIMICHANGAS.BI_D_CONCEPTO;
 
 -------------------- Eliminación de Funciones ---------------------------
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.calcular_fecha', 'FN') IS NOT NULL
+    DROP FUNCTION LOS_CHIMICHANGAS.calcular_fecha;
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.calcular_rango_etario', 'FN') IS NOT NULL
+    DROP FUNCTION LOS_CHIMICHANGAS.calcular_rango_etario;
+GO
+
 -------------------- Eliminación de Procedures ---------------------------
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO','P') IS NOT NULL
+    DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_CONCEPTO','P') IS NOT NULL
+    DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_CONCEPTO
+
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO
 
@@ -74,10 +90,17 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO','P') IS NOT NULL
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION
 
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION','P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO','P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO
+
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_todo','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_todo
 GO
 -------------------- Eliminación de Views ---------------------------
+
 IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PROMEDIO_TIEMPO_PUBLICACIONES','V') IS NOT NULL
     DROP VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_TIEMPO_PUBLICACIONES
 GO
@@ -86,106 +109,114 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL','V') IS NOT NULL
     DROP VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL
 GO
 
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA
+GO
+
 -------------------- Creación de tablas ---------------------------
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_SUBRUBRO (
-                                                subrubro_id INTEGER               IDENTITY(1,1) NOT NULL,
-                                                descripcion NVARCHAR(50)
+    subrubro_id INTEGER               IDENTITY(1,1) NOT NULL,
+    descripcion NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_RUBRO (
-                                             rubro_id INTEGER                  IDENTITY(1,1) NOT NULL,
-                                             descripcion NVARCHAR(50)
+    rubro_id INTEGER                  IDENTITY(1,1) NOT NULL,
+    descripcion NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIEMPO (
-                                              tiempo_id INTEGER                 IDENTITY(1,1) NOT NULL,
-                                              tiempo_anio INTEGER,
-                                              tiempo_cuatrimestre INTEGER,
-                                              tiempo_mes INTEGER
+    tiempo_id INTEGER                 IDENTITY(1,1) NOT NULL,
+    tiempo_anio INTEGER,
+    tiempo_cuatrimestre INTEGER,
+    tiempo_mes INTEGER
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_UBICACION (
-                                                 ubicacion_id INTEGER              IDENTITY(1,1) NOT NULL,
-                                                 ubicacion_provincia NVARCHAR(50),
-                                                 ubicacion_localidad NVARCHAR(50)
+    ubicacion_id INTEGER              IDENTITY(1,1) NOT NULL,
+    ubicacion_provincia NVARCHAR(50),
+    ubicacion_localidad NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_MARCA (
-                                             marca_id INTEGER                  IDENTITY(1,1) NOT NULL,
-                                             descripcion NVARCHAR(50)
+    marca_id INTEGER                  IDENTITY(1,1) NOT NULL,
+    descripcion NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO (
-                                                    rango_etario_id INTEGER           IDENTITY(1,1) NOT NULL,
-                                                    rango_etario_desc NVARCHAR(50)
+    rango_etario_id INTEGER           IDENTITY(1,1) NOT NULL,
+    rango_etario_desc NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS (
-                                                      horario_id INTEGER                IDENTITY(1,1) NOT NULL,
-                                                      rango_horario NVARCHAR(50)
+    horario_id INTEGER                IDENTITY(1,1) NOT NULL,
+    rango_horario NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO (
-                                                  tipo_envio_id INTEGER             IDENTITY(1,1) NOT NULL,
-                                                  descripcion NVARCHAR(50)
+    tipo_envio_id INTEGER             IDENTITY(1,1) NOT NULL,
+    descripcion NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO (
-                                                       tipo_medio_pago_id INTEGER        IDENTITY(1,1) NOT NULL,
-                                                       descripcion NVARCHAR(50)
+    tipo_medio_pago_id INTEGER        IDENTITY(1,1) NOT NULL,
+    descripcion NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_D_CONCEPTO (
-                                                concepto_id INTEGER               IDENTITY(1,1) NOT NULL,
-                                                tipo NVARCHAR(50)
+    concepto_id INTEGER               IDENTITY(1,1) NOT NULL,
+    tipo NVARCHAR(50)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION (
-                                                        publicacion_id INTEGER            IDENTITY(1,1) NOT NULL,
-                                                        subrubro_id INTEGER NOT NULL,
-                                                        tiempo_id INTEGER NOT NULL,
-                                                        marca_id INTEGER NOT NULL,
-                                                        fecha_inicio DATE,
-                                                        fecha_fin DATE,
-                                                        stock_inicial INTEGER
+    publicacion_id INTEGER            IDENTITY(1,1) NOT NULL,
+    subrubro_id INTEGER NOT NULL,
+    tiempo_id INTEGER NOT NULL,
+    marca_id INTEGER NOT NULL,
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    stock_inicial INTEGER
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA (
-                                                  venta_id INTEGER                  IDENTITY(1,1) NOT NULL,
-                                                  rubro_id INTEGER NOT NULL,
-                                                  ubicacion_cliente_id INTEGER NOT NULL,
-                                                  rango_etario_id INTEGER NOT NULL,
-                                                  tiempo_id INTEGER NOT NULL,
-                                                  horario_id INTEGER NOT NULL,
-                                                  ubicacion_almacen_id INTEGER NOT NULL,
-                                                  total DECIMAL(18,2)
+    venta_id INTEGER                  IDENTITY(1,1) NOT NULL,
+    rubro_id INTEGER NOT NULL,
+    ubicacion_cliente_id INTEGER NOT NULL,
+    rango_etario_id INTEGER NOT NULL,
+    tiempo_id INTEGER NOT NULL,
+    horario_id INTEGER NOT NULL,
+    ubicacion_almacen_id INTEGER NOT NULL,
+    total DECIMAL(18,2)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO (
-                                                  envio_id INTEGER                  IDENTITY(1,1) NOT NULL,
-                                                  tiempo_id INTEGER NOT NULL,
-                                                  ubicacion_id INTEGER NOT NULL,
-                                                  tipo_envio_id INTEGER NOT NULL,
-                                                  costo_envio DECIMAL(18,2),
-                                                  estado CHAR(1)
+    envio_id INTEGER                  IDENTITY(1,1) NOT NULL,
+    tiempo_id INTEGER NOT NULL,
+    ubicacion_id INTEGER NOT NULL,
+    tipo_envio_id INTEGER NOT NULL,
+    costo_envio DECIMAL(18,2),
+    estado CHAR(1)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PAGO (
-                                                 pago_id INTEGER                   IDENTITY(1,1) NOT NULL,
-                                                 tiempo_id INTEGER NOT NULL,
-                                                 ubicacion_id INTEGER NOT NULL,
-                                                 tipo_medio_pago_id INTEGER NOT NULL,
-                                                 total_sin_cuotas DECIMAL(18,2),
-                                                 total_con_cuotas DECIMAL(18,2)
+    pago_id INTEGER                   IDENTITY(1,1) NOT NULL,
+    tiempo_id INTEGER NOT NULL,
+    ubicacion_id INTEGER NOT NULL,
+    tipo_medio_pago_id INTEGER NOT NULL,
+    total_sin_cuotas DECIMAL(18,2),
+    total_con_cuotas DECIMAL(18,2)
 );
 
 CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION (
-                                                        facturacion_id INTEGER            IDENTITY(1,1) NOT NULL,
-                                                        tiempo_id INTEGER NOT NULL,
-                                                        ubicacion_id INTEGER NOT NULL,
-                                                        concepto_id INTEGER NOT NULL,
-                                                        total_facturado DECIMAL(18,2)
+    facturacion_id INTEGER            IDENTITY(1,1) NOT NULL,
+    tiempo_id INTEGER NOT NULL,
+    ubicacion_id INTEGER NOT NULL,
+    concepto_id INTEGER NOT NULL,
+    total_facturado DECIMAL(18,2)
 );
 -------------------- Creación de PK ---------------------------
 
@@ -308,7 +339,69 @@ ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION
     ADD CONSTRAINT fk_BI_hechos_facturacion_concepto
         FOREIGN KEY (concepto_id) REFERENCES LOS_CHIMICHANGAS.BI_D_CONCEPTO(concepto_id);
 
+-------------------- Funciones ---------------------------
+GO
+
+CREATE FUNCTION LOS_CHIMICHANGAS.calcular_fecha(@FECHA DATETIME)
+RETURNS SMALLINT
+AS
+BEGIN
+DECLARE @ANIO INT
+DECLARE @CUATRIMESTRE INT
+DECLARE @MES INT
+
+SELECT @ANIO = YEAR(@FECHA), @CUATRIMESTRE = DATEPART(QUARTER,@FECHA), @MES = MONTH(@FECHA)
+RETURN (select TIEMPO_ID from BI_D_TIEMPO
+where
+@ANIO = TIEMPO_ANIO AND
+@CUATRIMESTRE = TIEMPO_CUATRIMESTRE AND
+@MES = TIEMPO_MES
+)
+END
+GO
+
+CREATE FUNCTION LOS_CHIMICHANGAS.calcular_rango_etario (@FECHA_NACIMIENTO DATE)
+RETURNS SMALLINT
+AS
+BEGIN
+    DECLARE @ANIOS INT = DATEDIFF(YEAR, @FECHA_NACIMIENTO, GETDATE())
+    DECLARE @RES SMALLINT
+    IF @ANIOS < 25
+        SET @RES = 1
+    ELSE
+        IF @ANIOS BETWEEN 25 AND 35
+            SET @RES = 2
+        ELSE
+            IF @ANIOS BETWEEN 35 AND 50
+                SET @RES = 3
+            ELSE
+                IF @ANIOS > 50
+                    SET @RES = 4
+                ELSE
+                    SET @RES = 5
+    RETURN @RES
+END
+GO
+
 -------------------- Procedures ---------------------------
+GO
+
+-- Migracion de DIMENSIONES
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO
+AS
+BEGIN
+    INSERT INTO BI_D_TIPO_MEDIO_PAGO(descripcion)
+    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.tipo_medio_de_pago
+END
+GO
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_CONCEPTO
+AS
+BEGIN
+    INSERT INTO BI_D_CONCEPTO(tipo)
+    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.concepto
+END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO
@@ -367,10 +460,12 @@ BEGIN
     SELECT DISTINCT YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada)
     FROM LOS_CHIMICHANGAS.envio
     UNION
-    SELECT DISTINCT YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio)
+    SELECT DISTINCT YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio) -- Quizas hay que agregar fecha_fin tambien
     FROM LOS_CHIMICHANGAS.publicacion;
 END
 GO
+
+-- Migracion de HECHOS
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION
 AS
@@ -378,7 +473,7 @@ BEGIN
     INSERT INTO BI_HECHOS_PUBLICACION (subrubro_id, tiempo_id, marca_id, fecha_inicio, fecha_fin, stock_inicial)
     SELECT DISTINCT
         s.subrubro_id,
-        t.tiempo_id,
+        tiempo_id, 
         m.marca_id,
         pub.fecha_inicio,
         pub.fecha_fin,
@@ -389,9 +484,62 @@ BEGIN
              JOIN LOS_CHIMICHANGAS.publicacion pub ON pub.cod_producto = p.cod_producto
              JOIN LOS_CHIMICHANGAS.BI_D_SUBRUBRO s ON sub.descripcion = s.descripcion
              JOIN LOS_CHIMICHANGAS.BI_D_MARCA m ON mar.descripcion = m.descripcion
-             JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON t.tiempo_anio = YEAR(pub.fecha_inicio)
-        AND t.tiempo_cuatrimestre = DATEPART(QUARTER, pub.fecha_inicio)
-        AND t.tiempo_mes = MONTH(pub.fecha_inicio);
+             JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(pub.fecha_inicio) = tiempo_id  -- Agregue una funcion             
+END
+GO
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION
+AS
+BEGIN
+    INSERT INTO BI_HECHOS_FACTURACION (tiempo_id, ubicacion_id, concepto_id, total_facturado)
+    SELECT DISTINCT
+        tiempo_id,
+        bi_u.ubicacion_id,
+        c.concepto_id,
+        f.total
+    FROM LOS_CHIMICHANGAS.factura AS f
+        JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(f.fecha_factura) = tiempo_id
+        JOIN LOS_CHIMICHANGAS.usuario AS u ON u.cod_usuario = f.cod_usuario
+        JOIN LOS_CHIMICHANGAS.vendedor AS v ON v.cod_usuario = u.cod_usuario
+        JOIN LOS_CHIMICHANGAS.domicilio AS d ON d.cod_usuario = u.cod_usuario
+        JOIN LOS_CHIMICHANGAS.localidad AS l ON l.cod_localidad = d.cod_localidad
+        JOIN LOS_CHIMICHANGAS.provincia AS p ON p.cod_provincia = l.cod_provincia
+        JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON (
+            bi_u.ubicacion_provincia = p.nombre AND
+            bi_u.ubicacion_localidad = l.nombre
+        )
+        JOIN LOS_CHIMICHANGAS.detalle_factura AS df ON df.cod_factura = f.cod_factura
+        JOIN LOS_CHIMICHANGAS.concepto AS con ON con.cod_concepto = df.cod_concepto
+        JOIN LOS_CHIMICHANGAS.BI_D_CONCEPTO AS c ON c.tipo = con.descripcion;
+END
+GO
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO
+AS
+BEGIN
+    INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_PAGO (tiempo_id, ubicacion_id, tipo_medio_pago_id, total_con_cuotas, total_sin_cuotas)
+    SELECT DISTINCT
+        tiempo_id,
+        bi_u.ubicacion_id,
+        bi_tmp.tipo_medio_pago_id,
+        ISNULL(SUM(CASE WHEN det.cuotas > 0 THEN p.importe ELSE 0 END), 0) AS total_con_cuotas,
+        ISNULL(SUM(CASE WHEN det.cuotas = 0 THEN p.importe ELSE 0 END), 0) AS total_sin_cuotas
+    FROM LOS_CHIMICHANGAS.pago AS p
+    JOIN LOS_CHIMICHANGAS.venta AS v ON v.cod_venta = p.cod_venta
+    JOIN LOS_CHIMICHANGAS.cliente AS c ON c.cod_cliente = v.cod_cliente
+    JOIN LOS_CHIMICHANGAS.usuario AS u ON u.cod_usuario = c.cod_usuario
+    JOIN LOS_CHIMICHANGAS.domicilio AS d ON d.cod_usuario = u.cod_usuario
+    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.cod_localidad = d.cod_localidad
+    JOIN LOS_CHIMICHANGAS.provincia AS prov ON prov.cod_provincia = l.cod_provincia
+	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(p.fecha_pago) = tiempo_id
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON (
+        bi_u.ubicacion_provincia = prov.nombre AND
+        bi_u.ubicacion_localidad = l.nombre
+    )
+    JOIN LOS_CHIMICHANGAS.medio_de_pago AS mp ON mp.cod_medio = p.cod_medio
+    JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp ON tmp.cod_tipo_medio_pago = mp.cod_tipo_medio_pago
+    JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO AS bi_tmp ON bi_tmp.descripcion = tmp.descripcion
+    LEFT JOIN LOS_CHIMICHANGAS.detalle_pago AS det ON p.cod_detalle_pago = det.cod_detalle
 END
 GO
 
@@ -401,10 +549,14 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_UBICACION;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_RANGO_ETARIO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_HORARIO_VENTAS;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_CONCEPTO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_MARCA;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO;
-    EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION;
+ -- EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO;
 END
 GO
 
@@ -412,6 +564,7 @@ EXEC LOS_CHIMICHANGAS.migrar_todo
 GO
 
 -------------------- Views ---------------------------
+
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_TIEMPO_PUBLICACIONES AS
 SELECT
     s.descripcion AS subrubro,
@@ -436,4 +589,36 @@ FROM
         JOIN LOS_CHIMICHANGAS.BI_D_MARCA m ON pub.marca_id = m.marca_id
 GROUP BY
     m.descripcion, YEAR(pub.fecha_inicio);
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO AS
+SELECT 
+    tiempo.tiempo_anio AS año,
+    tiempo.tiempo_mes AS mes,
+    concepto.tipo AS concepto,
+    SUM(facturacion.total_facturado) AS total_facturado_concepto,
+    (SUM(facturacion.total_facturado) * 100.0 / SUM(SUM(facturacion.total_facturado)) 
+         OVER (PARTITION BY tiempo.tiempo_anio, tiempo.tiempo_mes)) AS porcentaje_facturacion
+FROM 
+    LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION AS facturacion
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_TIEMPO AS tiempo ON facturacion.tiempo_id = tiempo.tiempo_id
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_CONCEPTO AS concepto ON facturacion.concepto_id = concepto.concepto_id
+GROUP BY 
+    tiempo.tiempo_anio, tiempo.tiempo_mes, concepto.tipo;
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA AS
+SELECT 
+    u.ubicacion_provincia AS provincia,
+    t.tiempo_anio AS anio,
+    t.tiempo_cuatrimestre AS cuatrimestre,
+    t.tiempo_id,
+    SUM(bhf.total_facturado) AS monto_facturado
+FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bhf
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION u ON bhf.ubicacion_id = u.ubicacion_id
+    JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bhf.tiempo_id = t.tiempo_id
+GROUP BY 
+    u.ubicacion_provincia, t.tiempo_anio, t.tiempo_cuatrimestre, t.tiempo_id
 GO
