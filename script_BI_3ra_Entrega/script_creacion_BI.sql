@@ -58,14 +58,6 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.calcular_rango_etario', 'FN') IS NOT NULL
     DROP FUNCTION LOS_CHIMICHANGAS.calcular_rango_etario;
 GO
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.calcular_total_con_cuotas', 'FN') IS NOT NULL
-    DROP FUNCTION LOS_CHIMICHANGAS.calcular_total_con_cuotas;
-GO
-
-IF OBJECT_ID('LOS_CHIMICHANGAS.calcular_total_sin_cuotas', 'FN') IS NOT NULL
-    DROP FUNCTION LOS_CHIMICHANGAS.calcular_total_sin_cuotas;
-GO
-
 -------------------- Eliminación de Procedures ---------------------------
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO','P') IS NOT NULL
@@ -115,6 +107,14 @@ GO
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL','V') IS NOT NULL
     DROP VIEW LOS_CHIMICHANGAS.VIEW_PROMEDIO_STOCK_INICIAL
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA
 GO
 
 -------------------- Creación de tablas ---------------------------
@@ -383,36 +383,6 @@ BEGIN
 END
 GO
 
-CREATE FUNCTION LOS_CHIMICHANGAS.calcular_total_con_cuotas (@COD_VENTA DECIMAL)
-RETURNS DECIMAL(18, 2)
-AS
-BEGIN
-    DECLARE @TOTAL_CON_CUOTAS DECIMAL(18, 2)
-
-    SELECT @TOTAL_CON_CUOTAS = SUM(pago.importe)
-    FROM LOS_CHIMICHANGAS.pago pago
-    JOIN LOS_CHIMICHANGAS.detalle_pago detalle ON pago.cod_detalle_pago = detalle.cod_detalle
-    WHERE pago.cod_venta = @COD_VENTA AND detalle.cuotas > 0
-
-    RETURN @TOTAL_CON_CUOTAS
-END
-GO
-
-CREATE FUNCTION LOS_CHIMICHANGAS.calcular_total_sin_cuotas (@COD_VENTA DECIMAL)
-RETURNS DECIMAL(18, 2)
-AS
-BEGIN
-    DECLARE @TOTAL_SIN_CUOTAS DECIMAL(18, 2)
-
-    SELECT @TOTAL_SIN_CUOTAS = SUM(pago.importe)
-    FROM LOS_CHIMICHANGAS.pago pago
-    JOIN LOS_CHIMICHANGAS.detalle_pago detalle ON pago.cod_detalle_pago = detalle.cod_detalle
-    WHERE pago.cod_venta = @COD_VENTA AND detalle.cuotas = 0
-
-    RETURN @TOTAL_SIN_CUOTAS
-END
-GO
-
 -------------------- Procedures ---------------------------
 GO
 
@@ -490,7 +460,7 @@ BEGIN
     SELECT DISTINCT YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada)
     FROM LOS_CHIMICHANGAS.envio
     UNION
-    SELECT DISTINCT YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio)
+    SELECT DISTINCT YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio) -- Quizas hay que agregar fecha_fin tambien
     FROM LOS_CHIMICHANGAS.publicacion;
 END
 GO
@@ -552,8 +522,8 @@ BEGIN
         tiempo_id,
         bi_u.ubicacion_id,
         bi_tmp.tipo_medio_pago_id,
-        LOS_CHIMICHANGAS.calcular_total_con_cuotas(v.cod_venta) AS total_con_cuotas,
-        LOS_CHIMICHANGAS.calcular_total_sin_cuotas(v.cod_venta) AS total_sin_cuotas
+        ISNULL(SUM(CASE WHEN det.cuotas > 0 THEN p.importe ELSE 0 END), 0) AS total_con_cuotas,
+        ISNULL(SUM(CASE WHEN det.cuotas = 0 THEN p.importe ELSE 0 END), 0) AS total_sin_cuotas
     FROM LOS_CHIMICHANGAS.pago AS p
     JOIN LOS_CHIMICHANGAS.venta AS v ON v.cod_venta = p.cod_venta
     JOIN LOS_CHIMICHANGAS.cliente AS c ON c.cod_cliente = v.cod_cliente
@@ -569,6 +539,7 @@ BEGIN
     JOIN LOS_CHIMICHANGAS.medio_de_pago AS mp ON mp.cod_medio = p.cod_medio
     JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp ON tmp.cod_tipo_medio_pago = mp.cod_tipo_medio_pago
     JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO AS bi_tmp ON bi_tmp.descripcion = tmp.descripcion
+    LEFT JOIN LOS_CHIMICHANGAS.detalle_pago AS det ON p.cod_detalle_pago = det.cod_detalle
 END
 GO
 
@@ -585,7 +556,7 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION;
-    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO;
+ -- EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO;
 END
 GO
 
@@ -618,4 +589,36 @@ FROM
         JOIN LOS_CHIMICHANGAS.BI_D_MARCA m ON pub.marca_id = m.marca_id
 GROUP BY
     m.descripcion, YEAR(pub.fecha_inicio);
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO AS
+SELECT 
+    tiempo.tiempo_anio AS año,
+    tiempo.tiempo_mes AS mes,
+    concepto.tipo AS concepto,
+    SUM(facturacion.total_facturado) AS total_facturado_concepto,
+    (SUM(facturacion.total_facturado) * 100.0 / SUM(SUM(facturacion.total_facturado)) 
+         OVER (PARTITION BY tiempo.tiempo_anio, tiempo.tiempo_mes)) AS porcentaje_facturacion
+FROM 
+    LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION AS facturacion
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_TIEMPO AS tiempo ON facturacion.tiempo_id = tiempo.tiempo_id
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_CONCEPTO AS concepto ON facturacion.concepto_id = concepto.concepto_id
+GROUP BY 
+    tiempo.tiempo_anio, tiempo.tiempo_mes, concepto.tipo;
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA AS
+SELECT 
+    u.ubicacion_provincia AS provincia,
+    t.tiempo_anio AS anio,
+    t.tiempo_cuatrimestre AS cuatrimestre,
+    t.tiempo_id,
+    SUM(bhf.total_facturado) AS monto_facturado
+FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bhf
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION u ON bhf.ubicacion_id = u.ubicacion_id
+    JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bhf.tiempo_id = t.tiempo_id
+GROUP BY 
+    u.ubicacion_provincia, t.tiempo_anio, t.tiempo_cuatrimestre, t.tiempo_id
 GO
