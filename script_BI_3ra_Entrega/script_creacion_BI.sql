@@ -87,6 +87,12 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_UBICACION','P') IS NOT NULL
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO
 
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_D_RUBRO','P') IS NOT NULL
+    DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_RUBRO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA','P') IS NOT NULL
+    DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA
+
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION
 
@@ -95,6 +101,10 @@ DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO','P') IS NOT NULL
 DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA','P') IS NOT NULL
+DROP PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA
+
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.migrar_todo','P') IS NOT NULL
     DROP PROCEDURE LOS_CHIMICHANGAS.migrar_todo
@@ -115,6 +125,18 @@ GO
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA','V') IS NOT NULL
     DROP VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_VENTA_PROMEDIO_MENSUAL','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_VENTA_PROMEDIO_MENSUAL
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS
+GO
+
+IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS','V') IS NOT NULL
+    DROP VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS
 GO
 
 -------------------- Creación de tablas ---------------------------
@@ -441,9 +463,19 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_UBICACION
 AS
 BEGIN
     INSERT INTO BI_D_UBICACION(ubicacion_provincia, ubicacion_localidad)
-    SELECT DISTINCT p.nombre, l.nombre
-    FROM LOS_CHIMICHANGAS.Localidad AS l
-             JOIN LOS_CHIMICHANGAS.Provincia p ON p.cod_provincia = l.cod_provincia;
+    SELECT DISTINCT p.nombre AS ubicacion_provincia, l.nombre AS ubicacion_localidad
+    FROM LOS_CHIMICHANGAS.localidad AS l
+    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.cod_provincia = l.cod_provincia;
+
+    INSERT INTO BI_D_UBICACION(ubicacion_provincia, ubicacion_localidad)
+    SELECT DISTINCT p.nombre AS ubicacion_provincia, l.nombre AS ubicacion_localidad
+    FROM LOS_CHIMICHANGAS.almacen AS alm
+    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.cod_localidad = alm.cod_provincia
+    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.cod_provincia = alm.cod_provincia
+    LEFT JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON 
+        bi_u.ubicacion_provincia = p.nombre AND
+        bi_u.ubicacion_localidad = l.nombre
+    WHERE bi_u.ubicacion_id IS NULL; 
 END
 GO
 
@@ -464,6 +496,15 @@ BEGIN
     FROM LOS_CHIMICHANGAS.publicacion;
 END
 GO
+
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_RUBRO
+AS
+BEGIN
+    INSERT INTO BI_D_RUBRO (descripcion)
+    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.rubro
+END
+GO
+
 
 -- Migracion de HECHOS
 
@@ -543,6 +584,50 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA -- Funciona la cant de filas. TODO: No se por que rubro siempre devuelve 7 y tiempo_id siempre 1
+AS
+BEGIN
+    INSERT INTO BI_HECHOS_VENTA (rubro_id, ubicacion_cliente_id, rango_etario_id, tiempo_id, horario_id, ubicacion_almacen_id, total)
+    SELECT DISTINCT
+        rbi.rubro_id,                         
+        ubi_cliente.ubicacion_id,             
+        LOS_CHIMICHANGAS.calcular_rango_etario(c.fecha_nacimiento) AS rango_etario_id, 
+        LOS_CHIMICHANGAS.calcular_fecha(v.fecha_hora) AS tiempo_id,                     
+        h.horario_id,                         
+        ubi_almacen.ubicacion_id,             
+        v.total                               
+    FROM LOS_CHIMICHANGAS.venta AS v
+    JOIN LOS_CHIMICHANGAS.cliente AS c ON v.cod_cliente = c.cod_cliente
+    JOIN LOS_CHIMICHANGAS.usuario AS u ON u.cod_usuario = c.cod_usuario
+    JOIN LOS_CHIMICHANGAS.domicilio AS d ON d.cod_usuario = u.cod_usuario
+    JOIN LOS_CHIMICHANGAS.localidad AS l_cliente ON l_cliente.cod_localidad = d.cod_localidad
+    JOIN LOS_CHIMICHANGAS.provincia AS p_cliente ON p_cliente.cod_provincia = l_cliente.cod_provincia
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS ubi_cliente ON 
+        ubi_cliente.ubicacion_provincia = p_cliente.nombre AND 
+        ubi_cliente.ubicacion_localidad = l_cliente.nombre
+    JOIN LOS_CHIMICHANGAS.detalle_venta AS dv ON dv.cod_venta = v.cod_venta
+    JOIN LOS_CHIMICHANGAS.publicacion AS pub ON pub.cod_publicacion = dv.cod_publicacion
+    JOIN LOS_CHIMICHANGAS.producto AS prod ON prod.cod_producto = pub.cod_producto
+    JOIN LOS_CHIMICHANGAS.subrubro AS subr ON subr.cod_subrubro = prod.cod_subrubro
+    JOIN LOS_CHIMICHANGAS.rubro AS rub ON rub.cod_rubro = subr.cod_rubro
+    JOIN LOS_CHIMICHANGAS.BI_D_RUBRO AS rbi ON rbi.descripcion = rub.descripcion
+    JOIN LOS_CHIMICHANGAS.almacen AS alm ON alm.cod_almacen = pub.cod_almacen
+    JOIN LOS_CHIMICHANGAS.localidad AS l_almacen ON l_almacen.cod_localidad = alm.cod_provincia
+    JOIN LOS_CHIMICHANGAS.provincia AS p_almacen ON p_almacen.cod_provincia = alm.cod_provincia
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS ubi_almacen ON 
+        ubi_almacen.ubicacion_provincia = p_almacen.nombre AND 
+        ubi_almacen.ubicacion_localidad = l_almacen.nombre
+    JOIN LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS AS h ON
+        CASE
+            WHEN DATEPART(HOUR, v.fecha_hora) BETWEEN 0 AND 5 THEN '00:00 - 06:00'
+            WHEN DATEPART(HOUR, v.fecha_hora) BETWEEN 6 AND 11 THEN '06:00 - 12:00'
+            WHEN DATEPART(HOUR, v.fecha_hora) BETWEEN 12 AND 17 THEN '12:00 - 18:00'
+            ELSE '18:00 - 24:00'
+        END = h.rango_horario;
+END
+GO
+
+
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_todo
 AS
 BEGIN
@@ -553,9 +638,11 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_CONCEPTO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_MARCA;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_D_RUBRO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA
  -- EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO;
 END
 GO
@@ -621,4 +708,75 @@ FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bhf
     JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bhf.tiempo_id = t.tiempo_id
 GROUP BY 
     u.ubicacion_provincia, t.tiempo_anio, t.tiempo_cuatrimestre, t.tiempo_id
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_VENTA_PROMEDIO_MENSUAL AS 
+SELECT 
+    t.tiempo_anio AS anio,
+    t.tiempo_mes AS mes,
+    u.ubicacion_provincia AS provincia,
+    AVG(v.total) AS venta_promedio_mensual
+FROM 
+    LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_UBICACION AS u ON v.ubicacion_almacen_id = u.ubicacion_id
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
+GROUP BY 
+    t.tiempo_anio, t.tiempo_mes, u.ubicacion_provincia;
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS AS --TODO: me da mal porque justamente en venta solo aprece el rubro_id = 7 para todas las ventas entonces claro (error arrastrado)
+WITH RankedRendimiento AS (
+    SELECT 
+        t.tiempo_anio AS anio,
+        t.tiempo_cuatrimestre AS cuatrimestre,
+        u.ubicacion_localidad AS localidad,
+        r.rango_etario_desc AS rango_etario,
+        rub.descripcion AS rubro,
+        SUM(v.total) AS total_ventas,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.tiempo_anio, t.tiempo_cuatrimestre, u.ubicacion_localidad, r.rango_etario_desc
+            ORDER BY SUM(v.total) DESC
+        ) AS ranking
+    FROM 
+        LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
+    JOIN 
+        LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
+    JOIN 
+        LOS_CHIMICHANGAS.BI_D_UBICACION AS u ON v.ubicacion_cliente_id = u.ubicacion_id
+    JOIN 
+        LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO AS r ON v.rango_etario_id = r.rango_etario_id
+    JOIN 
+        LOS_CHIMICHANGAS.BI_D_RUBRO AS rub ON v.rubro_id = rub.rubro_id
+    GROUP BY 
+        t.tiempo_anio, t.tiempo_cuatrimestre, u.ubicacion_localidad, r.rango_etario_desc, rub.descripcion
+)
+SELECT 
+    anio, 
+    cuatrimestre, 
+    localidad, 
+    rango_etario, 
+    rubro, 
+    total_ventas
+FROM 
+    RankedRendimiento
+WHERE 
+    ranking <= 5;
+GO
+
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS AS --TODO: me da mal porque justamente en venta solo aprece el tiempo_id = 1 para todas las ventas entonces claro (error arrastrado)
+SELECT 
+    t.tiempo_anio AS anio,
+    t.tiempo_mes AS mes,
+    h.rango_horario AS rango_horario,
+    COUNT(v.venta_id) AS cantidad_ventas
+FROM 
+    LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
+JOIN 
+    LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS AS h ON v.horario_id = h.horario_id
+GROUP BY 
+    t.tiempo_anio, t.tiempo_mes, h.rango_horario;
 GO
