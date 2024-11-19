@@ -612,7 +612,7 @@ GO
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA AS
 SELECT 
     u.ubicacion_provincia AS provincia,
-    t.tiempo_anio AS anio,
+    t.tiempo_anio AS año,
     t.tiempo_cuatrimestre AS cuatrimestre,
     t.tiempo_id,
     SUM(bhf.total_facturado) AS monto_facturado
