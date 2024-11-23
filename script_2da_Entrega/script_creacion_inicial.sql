@@ -350,7 +350,7 @@ CREATE TABLE LOS_CHIMICHANGAS.envio(
     fecha_programada       DATE,
     horario_inicio         DECIMAL,
     horario_fin            DECIMAL,
-    fecha_entrega          DATE,
+    fecha_entrega          DATETIME,
     costo_envio            DECIMAL(18, 2)
 )
 
