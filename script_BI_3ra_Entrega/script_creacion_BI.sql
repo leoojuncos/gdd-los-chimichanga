@@ -505,6 +505,13 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIPO_ENVIO
+AS 
+BEGIN
+	INSERT INTO BI_D_TIPO_ENVIO (descripcion)
+	SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.tipo_envio
+END
+GO
 
 -- Migracion de HECHOS
 
@@ -627,6 +634,28 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_ENVIO
+AS
+BEGIN
+	INSERT INTO BI_HECHOS_ENVIO (envio_id, tiempo_id, ubicacion_id, tipo_envio_id, costo_envio, estado)
+	SELECT DISTINCT 
+	tiempo_id,
+	bi_u.ubicacion_id,
+	bi_te.tipo_envio_id,
+	e.costo_envio --estado ???????
+	FROM LOS_CHIMICHANGAS.envio AS e
+	JOIN domicilio d ON e.cod_domicilio = d.cod_domicilio
+	JOIN provincia prov ON d.cod_provincia = prov.cod_provincia
+	JOIN localidad l ON prov.cod_provincia = l.cod_provincia
+	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(e.fecha_programada) = tiempo_id --programada o enrtega?
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON (
+        bi_u.ubicacion_provincia = prov.nombre AND
+        bi_u.ubicacion_localidad = l.nombre
+    )
+	JOIN tipo_envio te ON e.cod_tipo = te.cod_tipo
+	JOIN LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO bi_te ON te.descripcion = bi_te.descripcion
+END
+GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_todo
 AS
@@ -640,10 +669,12 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_RUBRO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO;
+	EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_ENVIO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA
  -- EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO;
+	EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_ENVIO;
 END
 GO
 
