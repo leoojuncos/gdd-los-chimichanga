@@ -834,14 +834,13 @@ ORDER BY total_costo_envio DESC
 GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_CUMPLIMIENTO_ENVIOS AS
-SELECT COUNT(CASE WHEN e.estado = 'C' THEN 1 END) * 100.0 / COUNT(*) AS porcentaje_cumplimiento_envio, 
-ubi.ubicacion_provincia AS provincia, tie.tiempo_mes AS mes, 
-tie.tiempo_anio AS anio
-FROM LOS_CHIMICHANGAS.BI_HECHOS_ENVIO AS e
-JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO AS tie ON e.tiempo_id =  tie.tiempo_id
-JOIN LOS_CHIMICHANGAS.BI_D_UBICACION ubi ON e.ubicacion_id = ubi.ubicacion_id
-GROUP BY ubi.ubicacion_provincia,tie.tiempo_mes, tie.tiempo_anio
-ORDER BY mes, anio
+SELECT 
+	e.fecha_entrega,
+	DATEADD(HOUR, e.horario_inicio ,CAST (e.fecha_programada AS DATETIME)) as inicio,
+	DATEADD(HOUR, e.horario_fin,CAST (e.fecha_programada AS DATETIME)) as fin 
+from LOS_CHIMICHANGAS.envio e 
+WHERE e.fecha_entrega between DATEADD(HOUR, e.horario_inicio,
+	  CAST (e.fecha_programada AS DATETIME)) AND DATEADD(HOUR, e.horario_fin,CAST (e.fecha_programada AS DATETIME))
 GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_PAGO_CUOTAS AS
