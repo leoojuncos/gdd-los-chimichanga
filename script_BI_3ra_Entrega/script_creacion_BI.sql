@@ -138,9 +138,9 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS','V') IS NOT NULL
     DROP VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS
 GO
 
-IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS','V') IS NOT NULL
-    DROP VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS
-GO
+-- IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS','V') IS NOT NULL
+--     DROP VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS
+-- GO
 
 IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_CUMPLIMIENTO_ENVIOS', 'V') IS NOT NULL
 	DROP VIEW LOS_CHIMICHANGAS.VIEW_CUMPLIMIENTO_ENVIOS
@@ -155,103 +155,104 @@ IF OBJECT_ID('LOS_CHIMICHANGAS.VIEW_PAGO_CUOTAS','V') IS NOT NULL
 GO
 -------------------- Creación de tablas ---------------------------
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_SUBRUBRO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_SUBRUBRO ( -- ✅
     subrubro_id INTEGER               IDENTITY(1,1) NOT NULL,
-    descripcion NVARCHAR(50)
+    descripcion NVARCHAR(50)                        NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_RUBRO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_RUBRO ( -- ✅
     rubro_id INTEGER                  IDENTITY(1,1) NOT NULL,
-    descripcion NVARCHAR(50)
+    descripcion NVARCHAR(50)                        NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIEMPO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIEMPO ( -- ✅
     tiempo_id INTEGER                 IDENTITY(1,1) NOT NULL,
     tiempo_anio INTEGER,
     tiempo_cuatrimestre INTEGER,
     tiempo_mes INTEGER
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_UBICACION (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_UBICACION ( -- ✅
     ubicacion_id INTEGER              IDENTITY(1,1) NOT NULL,
     ubicacion_provincia NVARCHAR(50),
     ubicacion_localidad NVARCHAR(50)
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_MARCA (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_MARCA ( -- ✅
     marca_id INTEGER                  IDENTITY(1,1) NOT NULL,
-    descripcion NVARCHAR(50)
+    descripcion NVARCHAR(50)                        NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO ( -- ✅
     rango_etario_id INTEGER           IDENTITY(1,1) NOT NULL,
-    rango_etario_desc NVARCHAR(50)
+    rango_etario_desc NVARCHAR(50)                  NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS ( -- ✅
     horario_id INTEGER                IDENTITY(1,1) NOT NULL,
-    rango_horario NVARCHAR(50)
+    rango_horario NVARCHAR(50)                      NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO ( -- ✅
     tipo_envio_id INTEGER             IDENTITY(1,1) NOT NULL,
-    descripcion NVARCHAR(50)
+    descripcion NVARCHAR(50)                        
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO ( -- ✅
     tipo_medio_pago_id INTEGER        IDENTITY(1,1) NOT NULL,
-    descripcion NVARCHAR(50)
+    descripcion NVARCHAR(50)                        NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_D_CONCEPTO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_D_CONCEPTO ( -- ✅
     concepto_id INTEGER               IDENTITY(1,1) NOT NULL,
-    tipo NVARCHAR(50)
+    tipo NVARCHAR(50)                               NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION (
+CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION ( -- ✅
     publicacion_id INTEGER            IDENTITY(1,1) NOT NULL,
     subrubro_id INTEGER NOT NULL,
     tiempo_id INTEGER NOT NULL,
     marca_id INTEGER NOT NULL,
-    fecha_inicio DATE,
-    fecha_fin DATE,
-    stock_inicial INTEGER
+    tiempo_publicado SMALLINT NOT NULL, -- diferencia entre fecha inicio y fecha fin
+    stock_inicial INTEGER NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA (
+CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA ( -- ✅
     venta_id INTEGER                  IDENTITY(1,1) NOT NULL,
     rubro_id INTEGER NOT NULL,
     ubicacion_cliente_id INTEGER NOT NULL,
     rango_etario_id INTEGER NOT NULL,
     tiempo_id INTEGER NOT NULL,
-    horario_id INTEGER NOT NULL,
     ubicacion_almacen_id INTEGER NOT NULL,
+    medio_de_pago_id INTEGER NOT NULL,
     total DECIMAL(18,2)
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO ( -- ✅
     envio_id INTEGER                  IDENTITY(1,1) NOT NULL,
     tiempo_id INTEGER NOT NULL,
-    ubicacion_id INTEGER NOT NULL,
+    ubicacion_cliente_id INTEGER NOT NULL,
+    ubicacion_almacen_id INTEGER NOT NULL,
     tipo_envio_id INTEGER NOT NULL,
-    costo_envio DECIMAL(18,2)
+    cumplidos INTEGER NOT NULL, --POR AHORA NO SABEMOS QUE ES
+    envios_totales INTEGER NOT NULL, --POR AHORA NO SABEMOS QUE ES
+    costo_envio DECIMAL(18,2) NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PAGO (
+CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_PAGO ( -- ✅
     pago_id INTEGER                   IDENTITY(1,1) NOT NULL,
     tiempo_id INTEGER NOT NULL,
     ubicacion_id INTEGER NOT NULL,
     tipo_medio_pago_id INTEGER NOT NULL,
-    total_sin_cuotas DECIMAL(18,2),
-    total_con_cuotas DECIMAL(18,2)
+    total DECIMAL(18,2) NOT NULL
 );
 
-CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION (
+CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION ( -- ✅
     facturacion_id INTEGER            IDENTITY(1,1) NOT NULL,
     tiempo_id INTEGER NOT NULL,
     ubicacion_id INTEGER NOT NULL,
     concepto_id INTEGER NOT NULL,
-    total_facturado DECIMAL(18,2)
+    total_facturado DECIMAL(18,2) NOT NULL
 );
 -------------------- Creación de PK ---------------------------
 
@@ -314,7 +315,7 @@ ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION
     ADD CONSTRAINT fk_BI_hechos_publicacion_marca
         FOREIGN KEY (marca_id) REFERENCES LOS_CHIMICHANGAS.BI_D_MARCA(marca_id);
 
-ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA
+ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA 
     ADD CONSTRAINT fk_BI_hechos_venta_rubro
         FOREIGN KEY (rubro_id) REFERENCES LOS_CHIMICHANGAS.BI_D_RUBRO(rubro_id);
 
@@ -331,10 +332,6 @@ ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA
         FOREIGN KEY (tiempo_id) REFERENCES LOS_CHIMICHANGAS.BI_D_TIEMPO(tiempo_id);
 
 ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA
-    ADD CONSTRAINT fk_BI_hechos_venta_horario
-        FOREIGN KEY (horario_id) REFERENCES LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS(horario_id);
-
-ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_VENTA
     ADD CONSTRAINT fk_BI_hechos_venta_ubicacion_almacen
         FOREIGN KEY (ubicacion_almacen_id) REFERENCES LOS_CHIMICHANGAS.BI_D_UBICACION(ubicacion_id);
 
@@ -343,8 +340,12 @@ ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO
         FOREIGN KEY (tiempo_id) REFERENCES LOS_CHIMICHANGAS.BI_D_TIEMPO(tiempo_id);
 
 ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO
-    ADD CONSTRAINT fk_BI_hechos_envio_ubicacion
-        FOREIGN KEY (ubicacion_id) REFERENCES LOS_CHIMICHANGAS.BI_D_UBICACION(ubicacion_id);
+    ADD CONSTRAINT fk_BI_hechos_envio_ubicacion_cliente
+        FOREIGN KEY (ubicacion_cliente_id) REFERENCES LOS_CHIMICHANGAS.BI_D_UBICACION(ubicacion_id);
+
+ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO
+    ADD CONSTRAINT fk_BI_hechos_envio_ubicacion_almacen
+        FOREIGN KEY (ubicacion_almacen_id) REFERENCES LOS_CHIMICHANGAS.BI_D_UBICACION(ubicacion_id);
 
 ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO
     ADD CONSTRAINT fk_BI_hechos_envio_tipo_envio
@@ -374,6 +375,7 @@ ALTER TABLE LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION
     ADD CONSTRAINT fk_BI_hechos_facturacion_concepto
         FOREIGN KEY (concepto_id) REFERENCES LOS_CHIMICHANGAS.BI_D_CONCEPTO(concepto_id);
 
+
 -------------------- Funciones ---------------------------
 GO
 
@@ -386,12 +388,12 @@ DECLARE @CUATRIMESTRE INT
 DECLARE @MES INT
 
 SELECT @ANIO = YEAR(@FECHA), @CUATRIMESTRE = DATEPART(QUARTER,@FECHA), @MES = MONTH(@FECHA)
-RETURN (select TIEMPO_ID from BI_D_TIEMPO
-where
-@ANIO = TIEMPO_ANIO AND
-@CUATRIMESTRE = TIEMPO_CUATRIMESTRE AND
-@MES = TIEMPO_MES
-)
+RETURN (select tiempo_id from BI_D_TIEMPO
+    where
+    @ANIO = tiempo_anio AND
+    @CUATRIMESTRE = tiempo_cuatrimestre AND
+    @MES = tiempo_mes
+    )
 END
 GO
 
@@ -426,7 +428,7 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO
 AS
 BEGIN
-    INSERT INTO BI_D_TIPO_MEDIO_PAGO(descripcion)
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO(descripcion)
     SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.tipo_medio_de_pago
 END
 GO
@@ -434,24 +436,24 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_CONCEPTO
 AS
 BEGIN
-    INSERT INTO BI_D_CONCEPTO(tipo)
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_CONCEPTO(tipo)
     SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.concepto
 END
 GO
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO
-AS
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_SUBRUBRO AS
 BEGIN
-    INSERT INTO BI_D_SUBRUBRO(descripcion)
-    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.subrubro;
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_SUBRUBRO(descripcion)
+    SELECT DISTINCT descripcion
+    FROM LOS_CHIMICHANGAS.subrubro
 END
 GO
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_MARCA
-AS
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_MARCA AS
 BEGIN
-    INSERT INTO BI_D_MARCA(descripcion)
-    SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.marca_producto;
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_Marca(descripcion)
+    SELECT DISTINCT descripcion
+    FROM LOS_CHIMICHANGAS.marca_producto
 END
 GO
 
@@ -460,14 +462,18 @@ CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_RANGO_ETARIO
 AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO(rango_etario_desc)
-    VALUES ('<25'), ('25-35'), ('35-50'), ('>50'), ('DESCONOCIDO');
+    VALUES ('<25'),
+           ('25-35'),
+           ('35-50'),
+           ('>50'),
+           ('NONE')
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_HORARIO_VENTAS
 AS
 BEGIN
-    INSERT INTO BI_D_HORARIO_VENTAS(rango_horario)
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS(rango_horario)
     VALUES ('00:00 - 06:00'), ('06:00 - 12:00'), ('12:00 - 18:00'), ('18:00 - 24:00');
 END
 GO
@@ -475,45 +481,35 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_UBICACION
 AS
 BEGIN
-    INSERT INTO BI_D_UBICACION(ubicacion_provincia, ubicacion_localidad)
-    SELECT DISTINCT p.nombre AS ubicacion_provincia, l.nombre AS ubicacion_localidad
-    FROM LOS_CHIMICHANGAS.localidad AS l
-    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.cod_provincia = l.cod_provincia;
-
-    INSERT INTO BI_D_UBICACION(ubicacion_provincia, ubicacion_localidad)
-    SELECT DISTINCT p.nombre AS ubicacion_provincia, l.nombre AS ubicacion_localidad
-    FROM LOS_CHIMICHANGAS.almacen AS alm
-    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.cod_localidad = alm.cod_provincia
-    JOIN LOS_CHIMICHANGAS.provincia AS p ON p.cod_provincia = alm.cod_provincia
-    LEFT JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON 
-        bi_u.ubicacion_provincia = p.nombre AND
-        bi_u.ubicacion_localidad = l.nombre
-    WHERE bi_u.ubicacion_id IS NULL; 
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_UBICACION(ubicacion_provincia, ubicacion_localidad)
+        (SELECT p.cod_provincia, l.nombre
+         FROM LOS_CHIMICHANGAS.Localidad l
+                  JOIN LOS_CHIMICHANGAS.Provincia P ON P.cod_provincia = l.cod_provincia)
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIEMPO
 AS
 BEGIN
-    INSERT INTO BI_D_TIEMPO(tiempo_anio, tiempo_cuatrimestre, tiempo_mes)
-    SELECT DISTINCT YEAR(fecha_factura), DATEPART(QUARTER, fecha_factura), MONTH(fecha_factura)
-    FROM LOS_CHIMICHANGAS.factura
-    UNION
-    SELECT DISTINCT YEAR(fecha_pago), DATEPART(QUARTER, fecha_pago), MONTH(fecha_pago)
-    FROM LOS_CHIMICHANGAS.pago
-    UNION
-    SELECT DISTINCT YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada)
-    FROM LOS_CHIMICHANGAS.envio
-    UNION
-    SELECT DISTINCT YEAR(fecha_inicio), DATEPART(QUARTER, fecha_inicio), MONTH(fecha_inicio) -- Quizas hay que agregar fecha_fin tambien
-    FROM LOS_CHIMICHANGAS.publicacion;
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_TIEMPO(tiempo_anio, tiempo_cuatrimestre, tiempo_mes)
+        (SELECT YEAR(fecha_hora), DATEPART(QUARTER, fecha_hora), MONTH(fecha_hora)
+         FROM LOS_CHIMICHANGAS.venta
+         WHERE fecha_hora IS NOT NULL
+         UNION
+         SELECT YEAR(p.fecha_pago), DATEPART(QUARTER, p.fecha_pago), MONTH(p.fecha_pago)
+         FROM LOS_CHIMICHANGAS.Pago p
+         WHERE p.fecha_pago IS NOT NULL
+         UNION
+         SELECT YEAR(fecha_programada), DATEPART(QUARTER, fecha_programada), MONTH(fecha_programada)
+         FROM LOS_CHIMICHANGAS.envio
+         WHERE fecha_programada IS NOT NULL) ORDER BY 1,2,3
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_RUBRO
 AS
 BEGIN
-    INSERT INTO BI_D_RUBRO (descripcion)
+    INSERT INTO LOS_CHIMICHANGAS.BI_D_Rubro(descripcion)
     SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.rubro
 END
 GO
@@ -521,7 +517,7 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_D_TIPO_ENVIO
 AS 
 BEGIN
-	INSERT INTO BI_D_TIPO_ENVIO (descripcion)
+	INSERT INTO LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO (descripcion)
 	SELECT DISTINCT descripcion FROM LOS_CHIMICHANGAS.tipo_envio
 END
 GO
@@ -531,143 +527,138 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION
 AS
 BEGIN
-    INSERT INTO BI_HECHOS_PUBLICACION (subrubro_id, tiempo_id, marca_id, fecha_inicio, fecha_fin, stock_inicial)
-    SELECT DISTINCT
-        s.subrubro_id,
-        tiempo_id, 
-        m.marca_id,
-        pub.fecha_inicio,
-        pub.fecha_fin,
-        pub.stock
-    FROM LOS_CHIMICHANGAS.subrubro sub
-             JOIN LOS_CHIMICHANGAS.producto p ON sub.cod_subrubro = p.cod_subrubro
-             JOIN LOS_CHIMICHANGAS.marca_producto mar ON p.cod_marca = mar.cod_marca
-             JOIN LOS_CHIMICHANGAS.publicacion pub ON pub.cod_producto = p.cod_producto
-             JOIN LOS_CHIMICHANGAS.BI_D_SUBRUBRO s ON sub.descripcion = s.descripcion
-             JOIN LOS_CHIMICHANGAS.BI_D_MARCA m ON mar.descripcion = m.descripcion
-             JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(pub.fecha_inicio) = tiempo_id  -- Agregue una funcion             
+    INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_PUBLICACION (tiempo_id, subrubro_id, marca_id, stock_inicial, tiempo_publicado)
+    SELECT 
+        t.tiempo_id,
+        b_sub.subrubro_id,
+        bi_m.marca_id,
+        sum(p.stock)                                    as 'stock',
+        AVG(DATEDIFF(DAY, p.fecha_inicio, p.fecha_fin)) as tiempoVigente
+    FROM LOS_CHIMICHANGAS.publicacion p
+             JOIN LOS_CHIMICHANGAS.producto prod ON p.cod_producto = prod.cod_producto
+             JOIN LOS_CHIMICHANGAS.subrubro sub ON prod.cod_subrubro = sub.cod_subrubro
+             JOIN LOS_CHIMICHANGAS.BI_D_SUBRUBRO b_sub ON b_sub.descripcion = sub.descripcion
+             JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON t.tiempo_anio = YEAR(p.fecha_inicio) AND
+                                                    t.tiempo_cuatrimestre = DATEPART(QUARTER, p.fecha_inicio) AND
+                                                    t.tiempo_mes = MONTH(p.fecha_inicio)
+             JOIN LOS_CHIMICHANGAS.marca_producto m ON prod.cod_marca = m.cod_marca
+             JOIN LOS_CHIMICHANGAS.BI_D_MARCA bi_m ON m.descripcion = bi_m.descripcion
+    group by t.tiempo_id, b_sub.subrubro_id, bi_m.marca_id, p.fecha_inicio, p.fecha_fin
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION
 AS
 BEGIN
-    INSERT INTO BI_HECHOS_FACTURACION (tiempo_id, ubicacion_id, concepto_id, total_facturado)
-    SELECT DISTINCT
+    INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION (tiempo_id, ubicacion_id, concepto_id, total_facturado)
+    SELECT 
         tiempo_id,
         bi_u.ubicacion_id,
-        c.concepto_id,
-        f.total
+        bi_c.concepto_id,
+        SUM(det.subtotal) as total_facturado
     FROM LOS_CHIMICHANGAS.factura AS f
-        JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(f.fecha_factura) = tiempo_id
-        JOIN LOS_CHIMICHANGAS.usuario AS u ON u.cod_usuario = f.cod_usuario
-        JOIN LOS_CHIMICHANGAS.vendedor AS v ON v.cod_usuario = u.cod_usuario
-        JOIN LOS_CHIMICHANGAS.domicilio AS d ON d.cod_usuario = u.cod_usuario
-        JOIN LOS_CHIMICHANGAS.localidad AS l ON l.cod_localidad = d.cod_localidad
-        JOIN LOS_CHIMICHANGAS.provincia AS p ON p.cod_provincia = l.cod_provincia
-        JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON (
-            bi_u.ubicacion_provincia = p.nombre AND
-            bi_u.ubicacion_localidad = l.nombre
-        )
-        JOIN LOS_CHIMICHANGAS.detalle_factura AS df ON df.cod_factura = f.cod_factura
-        JOIN LOS_CHIMICHANGAS.concepto AS con ON con.cod_concepto = df.cod_concepto
-        JOIN LOS_CHIMICHANGAS.BI_D_CONCEPTO AS c ON c.tipo = con.descripcion;
+        JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON t.tiempo_anio = YEAR(fecha_factura) 
+												AND t.tiempo_cuatrimestre = DATEPART(QUARTER,fecha_factura) 
+												AND t.tiempo_mes = MONTH(fecha_factura)
+		JOIN LOS_CHIMICHANGAS.detalle_factura det ON det.cod_factura = f.cod_factura
+		JOIN LOS_CHIMICHANGAS.concepto c ON det.cod_concepto = c.cod_concepto
+		JOIN LOS_CHIMICHANGAS.BI_D_CONCEPTO bi_c ON bi_c.tipo = c.descripcion 
+		JOIN LOS_CHIMICHANGAS.usuario u ON f.cod_usuario = u.cod_usuario
+		JOIN LOS_CHIMICHANGAS.domicilio d ON u.cod_usuario = d.cod_usuario
+		JOIN LOS_CHIMICHANGAS.localidad l ON d.cod_localidad = l.cod_localidad
+		JOIN LOS_CHIMICHANGAS.provincia p ON l.cod_provincia = p.cod_provincia
+		JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_u ON bi_u.ubicacion_provincia = p.cod_provincia 
+													AND bi_u.ubicacion_localidad = l.nombre
+    GROUP BY tiempo_id, bi_c.concepto_id, bi_u.ubicacion_id
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_PAGO (tiempo_id, ubicacion_id, tipo_medio_pago_id, total_con_cuotas, total_sin_cuotas)
-    SELECT DISTINCT
+    INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_PAGO (tiempo_id, ubicacion_id, tipo_medio_pago_id, total)
+    SELECT 
         tiempo_id,
         bi_u.ubicacion_id,
         bi_tmp.tipo_medio_pago_id,
-        ISNULL(SUM(CASE WHEN det.cuotas > 0 THEN p.importe ELSE 0 END), 0) AS total_con_cuotas,
-        ISNULL(SUM(CASE WHEN det.cuotas = 0 THEN p.importe ELSE 0 END), 0) AS total_sin_cuotas
+        SUM(p.importe) as total
     FROM LOS_CHIMICHANGAS.pago AS p
-    JOIN LOS_CHIMICHANGAS.venta AS v ON v.cod_venta = p.cod_venta
-    JOIN LOS_CHIMICHANGAS.cliente AS c ON c.cod_cliente = v.cod_cliente
-    JOIN LOS_CHIMICHANGAS.usuario AS u ON u.cod_usuario = c.cod_usuario
-    JOIN LOS_CHIMICHANGAS.domicilio AS d ON d.cod_usuario = u.cod_usuario
-    JOIN LOS_CHIMICHANGAS.localidad AS l ON l.cod_localidad = d.cod_localidad
-    JOIN LOS_CHIMICHANGAS.provincia AS prov ON prov.cod_provincia = l.cod_provincia
-	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(p.fecha_pago) = tiempo_id
-    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON (
-        bi_u.ubicacion_provincia = prov.nombre AND
-        bi_u.ubicacion_localidad = l.nombre
-    )
-    JOIN LOS_CHIMICHANGAS.medio_de_pago AS mp ON mp.cod_medio = p.cod_medio
-    JOIN LOS_CHIMICHANGAS.tipo_medio_de_pago AS tmp ON tmp.cod_tipo_medio_pago = mp.cod_tipo_medio_pago
-    JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO AS bi_tmp ON bi_tmp.descripcion = tmp.descripcion
-    LEFT JOIN LOS_CHIMICHANGAS.detalle_pago AS det ON p.cod_detalle_pago = det.cod_detalle
-	GROUP BY tiempo_id, ubicacion_id, tipo_medio_pago_id
+		JOIN LOS_CHIMICHANGAS.venta v ON p.cod_venta = v.cod_venta
+		JOIN LOS_CHIMICHANGAS.usuario u ON v.cod_cliente = u.cod_usuario
+		JOIN LOS_CHIMICHANGAS.domicilio d ON d.cod_usuario = u.cod_usuario
+		JOIN LOS_CHIMICHANGAS.localidad l ON d.cod_localidad = l.cod_localidad
+		JOIN LOS_CHIMICHANGAS.provincia prov ON l.cod_provincia = prov.cod_provincia
+		JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_u ON bi_u.ubicacion_provincia = prov.cod_provincia 
+													AND bi_u.ubicacion_localidad = l.nombre
+		JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON LOS_CHIMICHANGAS.calcular_fecha(p.fecha_pago) = t.tiempo_id
+		JOIN LOS_CHIMICHANGAS.medio_de_pago m ON p.cod_medio=m.cod_medio
+		JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO bi_tmp ON m.cod_tipo_medio_pago = bi_tmp.tipo_medio_pago_id
+	GROUP BY tiempo_id, ubicacion_id, bi_tmp.tipo_medio_pago_id
 END
 GO
 
-CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA -- Funciona la cant de filas. TODO: No se por que rubro siempre devuelve 7 y tiempo_id siempre 1
+CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA 
 AS
 BEGIN
-    INSERT INTO BI_HECHOS_VENTA (rubro_id, ubicacion_cliente_id, rango_etario_id, tiempo_id, horario_id, ubicacion_almacen_id, total)
-    SELECT DISTINCT
-        rbi.rubro_id,                         
-        ubi_cliente.ubicacion_id,             
-        LOS_CHIMICHANGAS.calcular_rango_etario(c.fecha_nacimiento) AS rango_etario_id, 
-        LOS_CHIMICHANGAS.calcular_fecha(v.fecha_hora) AS tiempo_id,                     
-        h.horario_id,                         
-        ubi_almacen.ubicacion_id,             
-        v.total                               
-    FROM LOS_CHIMICHANGAS.venta AS v
-    JOIN LOS_CHIMICHANGAS.cliente AS c ON v.cod_cliente = c.cod_cliente
-    JOIN LOS_CHIMICHANGAS.usuario AS u ON u.cod_usuario = c.cod_usuario
-    JOIN LOS_CHIMICHANGAS.domicilio AS d ON d.cod_usuario = u.cod_usuario
-    JOIN LOS_CHIMICHANGAS.localidad AS l_cliente ON l_cliente.cod_localidad = d.cod_localidad
-    JOIN LOS_CHIMICHANGAS.provincia AS p_cliente ON p_cliente.cod_provincia = l_cliente.cod_provincia
-    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS ubi_cliente ON 
-        ubi_cliente.ubicacion_provincia = p_cliente.nombre AND 
-        ubi_cliente.ubicacion_localidad = l_cliente.nombre
-    JOIN LOS_CHIMICHANGAS.detalle_venta AS dv ON dv.cod_venta = v.cod_venta
-    JOIN LOS_CHIMICHANGAS.publicacion AS pub ON pub.cod_publicacion = dv.cod_publicacion
-    JOIN LOS_CHIMICHANGAS.producto AS prod ON prod.cod_producto = pub.cod_producto
-    JOIN LOS_CHIMICHANGAS.subrubro AS subr ON subr.cod_subrubro = prod.cod_subrubro
-    JOIN LOS_CHIMICHANGAS.rubro AS rub ON rub.cod_rubro = subr.cod_rubro
-    JOIN LOS_CHIMICHANGAS.BI_D_RUBRO AS rbi ON rbi.descripcion = rub.descripcion
-    JOIN LOS_CHIMICHANGAS.almacen AS alm ON alm.cod_almacen = pub.cod_almacen
-    JOIN LOS_CHIMICHANGAS.localidad AS l_almacen ON l_almacen.cod_localidad = alm.cod_provincia
-    JOIN LOS_CHIMICHANGAS.provincia AS p_almacen ON p_almacen.cod_provincia = alm.cod_provincia
-    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS ubi_almacen ON 
-        ubi_almacen.ubicacion_provincia = p_almacen.nombre AND 
-        ubi_almacen.ubicacion_localidad = l_almacen.nombre
-    JOIN LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS AS h ON
-        CASE
-            WHEN DATEPART(HOUR, v.fecha_hora) BETWEEN 0 AND 5 THEN '00:00 - 06:00'
-            WHEN DATEPART(HOUR, v.fecha_hora) BETWEEN 6 AND 11 THEN '06:00 - 12:00'
-            WHEN DATEPART(HOUR, v.fecha_hora) BETWEEN 12 AND 17 THEN '12:00 - 18:00'
-            ELSE '18:00 - 24:00'
-        END = h.rango_horario;
+INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_VENTA (tiempo_id, ubicacion_cliente_id, ubicacion_almacen_id, rubro_id, rango_etario_id, total, medio_de_pago_id)
+SELECT 
+    t.tiempo_id, 
+    bi_ubi.ubicacion_id AS 'ubiCliente', 
+    bi_ubi2.ubicacion_id AS 'ubiAlmacen',
+    bi_r.rubro_id, re.rango_etario_id, 
+    SUM(COALESCE(v.total,0)) AS 'importe',
+    bi_mp.tipo_medio_pago_id
+FROM LOS_CHIMICHANGAS.venta v  
+	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON LOS_CHIMICHANGAS.calcular_fecha(v.fecha_hora) = t.tiempo_id
+	JOIN LOS_CHIMICHANGAS.cliente c ON v.cod_cliente = c.cod_usuario
+	JOIN LOS_CHIMICHANGAS.usuario u ON c.cod_usuario = u.cod_usuario
+	JOIN LOS_CHIMICHANGAS.domicilio dom ON dom.cod_usuario = u.cod_usuario
+	JOIN LOS_CHIMICHANGAS.localidad loc ON dom.cod_localidad = loc.cod_localidad
+	JOIN LOS_CHIMICHANGAS.provincia prov ON loc.cod_provincia = prov.cod_provincia
+	JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_ubi ON prov.cod_provincia = bi_ubi.ubicacion_provincia AND loc.nombre = bi_ubi.ubicacion_localidad
+	JOIN LOS_CHIMICHANGAS.detalle_venta dv ON v.cod_venta = dv.cod_venta
+	JOIN LOS_CHIMICHANGAS.publicacion p ON dv.cod_publicacion = p.cod_publicacion
+	JOIN LOS_CHIMICHANGAS.almacen a ON p.cod_almacen = a.cod_almacen
+	JOIN LOS_CHIMICHANGAS.localidad loc2 ON a.cod_localidad = loc2.cod_localidad --NO SE SI ESTA BIEN CAPAZ HAY QUE CAMBIAR
+	JOIN LOS_CHIMICHANGAS.provincia prov2 ON loc2.cod_provincia = prov2.cod_provincia
+	JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_ubi2 ON loc2.nombre = bi_ubi2.ubicacion_localidad AND prov2.cod_provincia = bi_ubi2.ubicacion_provincia
+	JOIN LOS_CHIMICHANGAS.producto prod ON p.cod_producto = prod.cod_producto
+	JOIN LOS_CHIMICHANGAS.subrubro sub ON prod.cod_subrubro = sub.cod_subrubro
+	JOIN LOS_CHIMICHANGAS.rubro r ON sub.cod_rubro = r.cod_rubro
+	JOIN LOS_CHIMICHANGAS.BI_D_Rubro bi_r ON r.descripcion = bi_r.descripcion
+	JOIN LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO re ON re.rango_etario_id = LOS_CHIMICHANGAS.calcular_rango_etario(c.fecha_nacimiento)
+    JOIN LOS_CHIMICHANGAS.pago pago ON pago.cod_venta = v.cod_venta
+	JOIN LOS_CHIMICHANGAS.medio_de_pago mp ON pago.cod_medio = mp.cod_medio
+	JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO bi_mp ON bi_mp.descripcion = mp.descripcion
+GROUP BY t.tiempo_id, bi_ubi.ubicacion_id, bi_ubi2.ubicacion_id, bi_r.rubro_id, re.rango_etario_id,bi_mp.tipo_medio_pago_id
 END
 GO
 
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_BI_HECHO_ENVIO
 AS
 BEGIN
-	INSERT INTO BI_HECHOS_ENVIO (tiempo_id, ubicacion_id, tipo_envio_id, costo_envio)
-	SELECT DISTINCT 
-	tiempo_id,
-	bi_u.ubicacion_id,
-	bi_te.tipo_envio_id,
-	e.costo_envio
-	FROM LOS_CHIMICHANGAS.envio AS e
-	JOIN domicilio d ON e.cod_domicilio = d.cod_domicilio
-	JOIN localidad l ON d.cod_localidad = l.cod_localidad
-	JOIN provincia prov ON l.cod_provincia = prov.cod_provincia
-	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO ON LOS_CHIMICHANGAS.calcular_fecha(e.fecha_programada) = tiempo_id
-    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS bi_u ON (
-        bi_u.ubicacion_provincia = prov.nombre AND
-        bi_u.ubicacion_localidad = l.nombre
-    )
-	JOIN tipo_envio te ON e.cod_tipo = te.cod_tipo
-	JOIN LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO bi_te ON te.descripcion = bi_te.descripcion
+INSERT INTO LOS_CHIMICHANGAS.BI_HECHOS_ENVIO (tiempo_id,ubicacion_almacen_id,ubicacion_cliente_id, tipo_envio_id, cumplidos, envios_totales, costo_envio)
+(SELECT t.tiempo_id, bi_u_a.ubicacion_id AS u_almacen, bi_u_c.ubicacion_id AS u_cliente, bi_u_te.tipo_envio_id AS u_tipo_envio,
+COUNT(CASE WHEN e.fecha_entrega between DATEADD(HOUR, e.horario_inicio , CAST(e.fecha_programada AS DATETIME)) AND DATEADD(HOUR, e.horario_fin,CAST (e.fecha_programada AS DATETIME)) THEN 1 ELSE 0 END)AS cumplidos,
+COUNT(COALESCE(e.cod_envio,0))AS totales,
+SUM(COALESCE(e.costo_envio,0))
+    FROM LOS_CHIMICHANGAS.envio e 
+    JOIN LOS_CHIMICHANGAS.tipo_envio tipo_e ON e.cod_tipo = tipo_e.cod_tipo
+    JOIN LOS_CHIMICHANGAS.BI_D_TIPO_ENVIO bi_u_te ON bi_u_te.tipo_envio_id = tipo_e.cod_tipo
+	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON LOS_CHIMICHANGAS.calcular_fecha(e.fecha_entrega) = t.tiempo_id 
+	JOIN LOS_CHIMICHANGAS.domicilio d ON e.cod_domicilio = d.cod_domicilio
+    JOIN LOS_CHIMICHANGAS.localidad l ON d.cod_localidad = l.cod_localidad
+    JOIN LOS_CHIMICHANGAS.provincia prov ON l.cod_provincia = prov.cod_provincia
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_u_c ON bi_u_c.ubicacion_provincia = prov.cod_provincia AND bi_u_c.ubicacion_localidad = l.nombre
+	JOIN LOS_CHIMICHANGAS.venta v ON v.cod_venta = e.cod_venta
+	JOIN LOS_CHIMICHANGAS.detalle_venta det_v ON v.cod_venta = det_v.cod_venta
+	JOIN LOS_CHIMICHANGAS.publicacion p ON p.cod_publicacion = det_v.cod_publicacion
+	JOIN LOS_CHIMICHANGAS.almacen a ON a.cod_almacen = p.cod_almacen
+	JOIN LOS_CHIMICHANGAS.localidad l_a ON a.cod_localidad = l_a.cod_localidad
+    JOIN LOS_CHIMICHANGAS.provincia prov_a ON l_a.cod_provincia = prov_a.cod_provincia
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_u_a ON bi_u_a.ubicacion_provincia = prov_a.cod_provincia AND bi_u_a.ubicacion_localidad = l_a.nombre
+    GROUP BY t.tiempo_id,bi_u_c.ubicacion_id,bi_u_a.ubicacion_id, bi_u_te.tipo_envio_id
+)
 END
 GO
 
@@ -684,7 +675,7 @@ BEGIN
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_RUBRO;
     EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_MEDIO_PAGO;
 	EXEC LOS_CHIMICHANGAS.migrar_BI_D_TIPO_ENVIO;
-    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION;
+    EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PUBLICACION; -- VER
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_FACTURACION;
     EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_VENTA
 	EXEC LOS_CHIMICHANGAS.migrar_BI_HECHO_PAGO;
@@ -724,34 +715,30 @@ GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_PORCENTAJE_FACTURACION_POR_CONCEPTO AS
 SELECT 
-    tiempo.tiempo_anio AS año,
-    tiempo.tiempo_mes AS mes,
-    concepto.tipo AS concepto,
-    SUM(facturacion.total_facturado) AS total_facturado_concepto,
-    (SUM(facturacion.total_facturado) * 100.0 / SUM(SUM(facturacion.total_facturado)) 
-         OVER (PARTITION BY tiempo.tiempo_anio, tiempo.tiempo_mes)) AS porcentaje_facturacion
-FROM 
-    LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION AS facturacion
-JOIN 
-    LOS_CHIMICHANGAS.BI_D_TIEMPO AS tiempo ON facturacion.tiempo_id = tiempo.tiempo_id
-JOIN 
-    LOS_CHIMICHANGAS.BI_D_CONCEPTO AS concepto ON facturacion.concepto_id = concepto.concepto_id
-GROUP BY 
-    tiempo.tiempo_anio, tiempo.tiempo_mes, concepto.tipo;
+	t.tiempo_anio,
+	t.tiempo_mes,
+	bi_c.concepto_id,
+	bi_c.tipo,
+	SUM(bi_f.total_facturado) 'total_concepto', 
+		SUM(SUM(bi_f.total_facturado)) OVER (PARTITION BY t.tiempo_anio, t.tiempo_mes) AS total_mes,
+		(SUM(bi_f.total_facturado) * 100.0) / SUM(SUM(bi_f.total_facturado)) OVER (PARTITION BY t.tiempo_anio, t.tiempo_mes) AS porcentaje_factura
+FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bi_f 
+	join LOS_CHIMICHANGAS.BI_D_CONCEPTO bi_c ON bi_f.concepto_id = bi_c.concepto_id
+	join LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bi_f.tiempo_id = t.tiempo_id
+GROUP BY t.tiempo_anio, t.tiempo_mes, bi_c.concepto_id, bi_c.tipo
 GO
 
-CREATE VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA AS
+CREATE OR ALTER VIEW LOS_CHIMICHANGAS.VIEW_FACTURACION_POR_PROVINCIA AS
 SELECT 
-    u.ubicacion_provincia AS provincia,
-    t.tiempo_anio AS anio,
-    t.tiempo_cuatrimestre AS cuatrimestre,
-    t.tiempo_id,
-    SUM(bhf.total_facturado) AS monto_facturado
-FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bhf
-    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION u ON bhf.ubicacion_id = u.ubicacion_id
-    JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bhf.tiempo_id = t.tiempo_id
-GROUP BY 
-    u.ubicacion_provincia, t.tiempo_anio, t.tiempo_cuatrimestre, t.tiempo_id
+	p.nombre, 
+	t.tiempo_anio,
+	t.tiempo_cuatrimestre, 
+	SUM(bi_f.total_facturado) montoFacturado
+FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bi_f 
+	JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_ubi ON bi_f.ubicacion_id = bi_ubi.ubicacion_id
+	JOIN LOS_CHIMICHANGAS.provincia p ON bi_ubi.ubicacion_provincia = p.cod_provincia
+	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bi_f.tiempo_id = t.tiempo_id
+GROUP BY p.nombre, t.tiempo_cuatrimestre, t.tiempo_anio
 GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_VENTA_PROMEDIO_MENSUAL AS 
@@ -770,7 +757,7 @@ GROUP BY
     t.tiempo_anio, t.tiempo_mes, u.ubicacion_provincia;
 GO
 
-CREATE VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS AS --TODO: me da mal porque justamente en venta solo aprece el rubro_id = 7 para todas las ventas entonces claro (error arrastrado)
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS AS 
 WITH RankedRendimiento AS (
     SELECT 
         t.tiempo_anio AS anio,
@@ -809,21 +796,21 @@ WHERE
     ranking <= 5;
 GO
 
-CREATE VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS AS --TODO: me da mal porque justamente en venta solo aprece el tiempo_id = 1 para todas las ventas entonces claro (error arrastrado)
-SELECT 
-    t.tiempo_anio AS anio,
-    t.tiempo_mes AS mes,
-    h.rango_horario AS rango_horario,
-    COUNT(v.venta_id) AS cantidad_ventas
-FROM 
-    LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
-JOIN 
-    LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
-JOIN 
-    LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS AS h ON v.horario_id = h.horario_id
-GROUP BY 
-    t.tiempo_anio, t.tiempo_mes, h.rango_horario;
-GO
+-- CREATE VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS AS 
+-- SELECT 
+--     t.tiempo_anio AS anio,
+--     t.tiempo_mes AS mes,
+--     h.rango_horario AS rango_horario,
+--     COUNT(v.venta_id) AS cantidad_ventas
+-- FROM 
+--     LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
+-- JOIN 
+--     LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
+-- JOIN 
+--     LOS_CHIMICHANGAS.BI_D_HORARIO_VENTAS AS h ON v.horario_id = h.horario_id
+-- GROUP BY 
+--     t.tiempo_anio, t.tiempo_mes, h.rango_horario;
+-- GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_LOCALIDAD_COSTO_ENVIO AS
 SELECT TOP 5 ubi.ubicacion_localidad AS localidad, SUM(e.costo_envio) AS total_costo_envio
@@ -844,43 +831,18 @@ WHERE e.fecha_entrega between DATEADD(HOUR, e.horario_inicio,
 GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_PAGO_CUOTAS AS
-WITH LocalidadesRanking AS (
-    SELECT 
-        u.ubicacion_localidad AS localidad,
-        SUM(p.total_con_cuotas) AS mayor_importe,
-        tm.descripcion AS medio_pago,
-        t.tiempo_mes AS mes,
-        t.tiempo_anio AS anio,
-        ROW_NUMBER() OVER (PARTITION BY u.ubicacion_localidad ORDER BY SUM(p.total_con_cuotas) DESC) AS rn
-    FROM LOS_CHIMICHANGAS.BI_HECHOS_PAGO AS p
-    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS u ON u.ubicacion_id = p.ubicacion_id
-    JOIN LOS_CHIMICHANGAS.BI_HECHOS_ENVIO AS e ON e.ubicacion_id = u.ubicacion_id
-    JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON t.tiempo_id = p.tiempo_id
-    JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO AS tm ON tm.tipo_medio_pago_id = p.tipo_medio_pago_id
-    GROUP BY u.ubicacion_localidad, tm.descripcion, t.tiempo_anio, t.tiempo_mes
-)
 SELECT TOP 3 
-    localidad,
-    mayor_importe,
-    medio_pago,
-    mes,
-    anio
-FROM LocalidadesRanking
-WHERE rn = 1
-ORDER BY mayor_importe DESC;
-GO
+	u.ubicacion_localidad,
+	t.tiempo_mes,
+	t.tiempo_anio,
+	mp.tipo_medio_pago_id,
+	sum(v.total) as total 
+FROM LOS_CHIMICHANGAS.BI_HECHOS_VENTA v 
+	JOIN LOS_CHIMICHANGAS.BI_D_TIPO_MEDIO_PAGO mp ON v.medio_de_pago_id = mp.tipo_medio_pago_id
+	JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON v.tiempo_id = t.tiempo_id 
+	JOIN LOS_CHIMICHANGAS.BI_D_UBICACION u ON v.ubicacion_cliente_id = u.ubicacion_id
+GROUP BY u.ubicacion_localidad,u.ubicacion_provincia, t.tiempo_mes, t.tiempo_anio, mp.tipo_medio_pago_id
+ORDER BY total DESC
+go
 
---TODO
---Errores que tenemos: 
---Da mal la cantidad de rows de pago
---Da siempre 0 lo de las cuotas (PUEDE QUE ESTE BIEN)
---Me da 7 siempre el rubro en VENTA
---Me da 1 siempre el tiempo en VENTA
---Publicacion da subrobro 12 en todo
---Publicacion da marca 2 en todo
---Una de las view de facturacion por concepto parece estar mal (siempre da 33 por ciento) (PUEDE QUE ESTE BIEN)
---Una de las views de envio esta MAL (PERO EN LA CONSIGNA DE POR SI ESTA RARO PORQUE COMO COMPARO DATE CON DATE TIME)
---MODIFICAR EN EL DER QUE EL ENVIO YA NO TIENE ESTADO
---LAS VIEWS PARECEN TENER ERROR ARASTRADO
-
---Fecha entrega final: 09/12/2024
+--
