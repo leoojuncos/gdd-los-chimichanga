@@ -251,8 +251,7 @@ CREATE TABLE LOS_CHIMICHANGAS.producto(
 
 CREATE TABLE LOS_CHIMICHANGAS.almacen(
     cod_almacen     DECIMAL             		NOT NULL,
-	cod_provincia	DECIMAL						NOT NULL, 
-    descripcion     NVARCHAR(50),
+	cod_localidad	DECIMAL						NOT NULL, 
     calle           NVARCHAR(50), 
     nro_calle       DECIMAL,
     costo_dia       DECIMAL(18, 2)
@@ -469,8 +468,8 @@ ADD CONSTRAINT fk_producto_modelo
 FOREIGN KEY (cod_modelo) REFERENCES LOS_CHIMICHANGAS.modelo_producto(cod_modelo);
 
 ALTER TABLE LOS_CHIMICHANGAS.almacen
-ADD CONSTRAINT fk_almacen_provincia
-FOREIGN KEY (cod_provincia) REFERENCES LOS_CHIMICHANGAS.provincia(cod_provincia);
+ADD CONSTRAINT fk_almacen_localidad
+FOREIGN KEY (cod_localidad) REFERENCES LOS_CHIMICHANGAS.localidad(cod_localidad);
 
 ALTER TABLE LOS_CHIMICHANGAS.publicacion
 ADD CONSTRAINT fk_publicacion_vendedor
@@ -783,17 +782,18 @@ GO
 CREATE PROCEDURE LOS_CHIMICHANGAS.migrar_almacen
 AS
 BEGIN
-    INSERT INTO LOS_CHIMICHANGAS.almacen (cod_almacen, cod_provincia, descripcion, calle, nro_calle, costo_dia)
+    INSERT INTO LOS_CHIMICHANGAS.almacen (cod_almacen, cod_localidad, calle, nro_calle, costo_dia)
     SELECT DISTINCT 
         m.ALMACEN_CODIGO,
-        p.cod_provincia,                     
-        m.ALMACEN_Localidad,   
+        l.cod_localidad,                        
         m.ALMACEN_CALLE,             
         m.ALMACEN_NRO_CALLE,     
         m.ALMACEN_COSTO_DIA_AL  
     FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.provincia AS p      
-    ON m.ALMACEN_PROVINCIA = p.nombre    
+	JOIN LOS_CHIMICHANGAS.provincia AS p 
+    ON p.nombre = ALMACEN_PROVINCIA 
+    JOIN LOS_CHIMICHANGAS.localidad AS l      
+    ON ALMACEN_Localidad = l.nombre AND l.cod_provincia = p.cod_provincia
     WHERE m.ALMACEN_CALLE IS NOT NULL;
 END
 GO
