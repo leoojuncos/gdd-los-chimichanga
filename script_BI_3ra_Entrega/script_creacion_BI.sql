@@ -234,8 +234,8 @@ CREATE TABLE LOS_CHIMICHANGAS.BI_HECHOS_ENVIO ( -- ✅
     ubicacion_cliente_id INTEGER NOT NULL,
     ubicacion_almacen_id INTEGER NOT NULL,
     tipo_envio_id INTEGER NOT NULL,
-    cumplidos INTEGER NOT NULL, --POR AHORA NO SABEMOS QUE ES
-    envios_totales INTEGER NOT NULL, --POR AHORA NO SABEMOS QUE ES
+    cumplidos INTEGER NOT NULL,
+    envios_totales INTEGER NOT NULL,
     costo_envio DECIMAL(18,2) NOT NULL
 );
 
@@ -792,20 +792,20 @@ GO
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_LOCALIDAD_COSTO_ENVIO AS
 SELECT TOP 5 ubi.ubicacion_localidad AS localidad, SUM(e.costo_envio) AS total_costo_envio
 FROM LOS_CHIMICHANGAS.BI_HECHOS_ENVIO AS e
-JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS ubi ON e.ubicacion_id = ubi.ubicacion_id
-GROUP BY ubi.ubicacion_id, ubi.ubicacion_localidad
-ORDER BY total_costo_envio DESC
+JOIN LOS_CHIMICHANGAS.BI_D_UBICACION AS ubi ON e.ubicacion_cliente_id = ubi.ubicacion_id
+GROUP BY e.costo_envio, ubi.ubicacion_localidad
+ORDER BY SUM(e.costo_envio) DESC
 GO
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_CUMPLIMIENTO_ENVIOS AS
 SELECT 
-	e.fecha_entrega,
-	DATEADD(HOUR, e.horario_inicio ,CAST (e.fecha_programada AS DATETIME)) as inicio,
-	DATEADD(HOUR, e.horario_fin,CAST (e.fecha_programada AS DATETIME)) as fin 
-from LOS_CHIMICHANGAS.envio e 
-WHERE e.fecha_entrega between DATEADD(HOUR, e.horario_inicio,
-	  CAST (e.fecha_programada AS DATETIME)) AND DATEADD(HOUR, e.horario_fin,CAST (e.fecha_programada AS DATETIME))
+	SUM(e.cumplidos)/SUM(e.envios_totales)*100 AS Porcentaje
+FROM LOS_CHIMICHANGAS.BI_HECHOS_ENVIO e
+JOIN LOS_CHIMICHANGAS.BI_D_UBICACION ubi ON e.ubicacion_almacen_id = ubi.ubicacion_id
+JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON t.tiempo_id = e.tiempo_id
+GROUP BY ubi.ubicacion_provincia, t.tiempo_anio, t.tiempo_mes
 GO
+
 
 CREATE VIEW LOS_CHIMICHANGAS.VIEW_PAGO_CUOTAS AS
 SELECT TOP 3 
@@ -821,5 +821,3 @@ FROM LOS_CHIMICHANGAS.BI_HECHOS_VENTA v
 GROUP BY u.ubicacion_localidad,u.ubicacion_provincia, t.tiempo_mes, t.tiempo_anio, mp.tipo_medio_pago_id
 ORDER BY total DESC
 go
-
---
