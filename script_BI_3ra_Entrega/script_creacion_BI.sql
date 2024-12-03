@@ -741,59 +741,36 @@ FROM LOS_CHIMICHANGAS.BI_HECHOS_FACTURACION bi_f
 GROUP BY p.nombre, t.tiempo_cuatrimestre, t.tiempo_anio
 GO
 
-CREATE VIEW LOS_CHIMICHANGAS.VIEW_VENTA_PROMEDIO_MENSUAL AS 
-SELECT 
-    t.tiempo_anio AS anio,
-    t.tiempo_mes AS mes,
-    u.ubicacion_provincia AS provincia,
-    AVG(v.total) AS venta_promedio_mensual
-FROM 
-    LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
-JOIN 
-    LOS_CHIMICHANGAS.BI_D_UBICACION AS u ON v.ubicacion_almacen_id = u.ubicacion_id
-JOIN 
-    LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
-GROUP BY 
-    t.tiempo_anio, t.tiempo_mes, u.ubicacion_provincia;
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_VENTA_PROMEDIO_MENSUAL AS
+SELECT TOP 5 
+    sum(v.total)/(select sum(venta.total) FROM LOS_CHIMICHANGAS.venta venta) AS promedio, 
+    t.tiempo_anio,
+    t.tiempo_mes,
+    u.ubicacion_localidad
+FROM LOS_CHIMICHANGAS.BI_HECHOS_VENTA v 
+    JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON t.tiempo_id = v.venta_id
+    JOIN LOS_CHIMICHANGAS.BI_D_UBICACION u ON u.ubicacion_id = v.ubicacion_almacen_id
+    JOIN LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO r ON r.rango_etario_id = v.rango_etario_id
+GROUP BY t.tiempo_anio, t.tiempo_mes, u.ubicacion_localidad, u.ubicacion_provincia, r.rango_etario_desc
 GO
 
-CREATE VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS AS 
-WITH RankedRendimiento AS (
+CREATE VIEW LOS_CHIMICHANGAS.VIEW_RENDIMIENTO_RUBROS as
+SELECT tiempo_anio, tiempo_cuatrimestre, ubicacion_localidad, rango_etario_id, rubro_id, descripcion, total_ventas
+FROM (
     SELECT 
-        t.tiempo_anio AS anio,
-        t.tiempo_cuatrimestre AS cuatrimestre,
-        u.ubicacion_localidad AS localidad,
-        r.rango_etario_desc AS rango_etario,
-        rub.descripcion AS rubro,
-        SUM(v.total) AS total_ventas,
+        t.tiempo_anio, t.tiempo_cuatrimestre, bi_ubi.ubicacion_localidad, bi_v.rango_etario_id, bi_rub.rubro_id, bi_rub.descripcion, SUM(bi_v.total) AS total_ventas,
         ROW_NUMBER() OVER (
-            PARTITION BY t.tiempo_anio, t.tiempo_cuatrimestre, u.ubicacion_localidad, r.rango_etario_desc
-            ORDER BY SUM(v.total) DESC
-        ) AS ranking
+							PARTITION BY t.tiempo_anio, t.tiempo_cuatrimestre, bi_ubi.ubicacion_localidad, bi_v.rango_etario_id
+							ORDER BY SUM(bi_v.total) DESC
+					) AS ranking
     FROM 
-        LOS_CHIMICHANGAS.BI_HECHOS_VENTA AS v
-    JOIN 
-        LOS_CHIMICHANGAS.BI_D_TIEMPO AS t ON v.tiempo_id = t.tiempo_id
-    JOIN 
-        LOS_CHIMICHANGAS.BI_D_UBICACION AS u ON v.ubicacion_cliente_id = u.ubicacion_id
-    JOIN 
-        LOS_CHIMICHANGAS.BI_D_RANGO_ETARIO AS r ON v.rango_etario_id = r.rango_etario_id
-    JOIN 
-        LOS_CHIMICHANGAS.BI_D_RUBRO AS rub ON v.rubro_id = rub.rubro_id
-    GROUP BY 
-        t.tiempo_anio, t.tiempo_cuatrimestre, u.ubicacion_localidad, r.rango_etario_desc, rub.descripcion
-)
-SELECT 
-    anio, 
-    cuatrimestre, 
-    localidad, 
-    rango_etario, 
-    rubro, 
-    total_ventas
-FROM 
-    RankedRendimiento
+        LOS_CHIMICHANGAS.BI_HECHOS_VENTA bi_v	JOIN LOS_CHIMICHANGAS.BI_D_Rubro bi_rub ON bi_v.rubro_id = bi_rub.rubro_id
+												JOIN LOS_CHIMICHANGAS.BI_D_TIEMPO t ON bi_v.tiempo_id = t.tiempo_id
+												JOIN LOS_CHIMICHANGAS.BI_D_UBICACION bi_ubi ON bi_v.ubicacion_cliente_id = bi_ubi.ubicacion_id
+    GROUP BY t.tiempo_anio, t.tiempo_cuatrimestre, bi_ubi.ubicacion_localidad, bi_v.rango_etario_id, bi_rub.rubro_id, bi_rub.descripcion
+	) AS VentasConRanking
 WHERE 
-    ranking <= 5;
+    ranking <= 5
 GO
 
 -- CREATE VIEW LOS_CHIMICHANGAS.VIEW_VOLUMEN_VENTAS AS 
