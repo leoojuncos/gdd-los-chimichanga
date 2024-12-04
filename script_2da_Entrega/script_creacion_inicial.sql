@@ -760,20 +760,28 @@ AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.producto (cod_subrubro, cod_marca, cod_modelo, descripcion, codigo, precio)
     SELECT DISTINCT 
-        sr.cod_subrubro,                       
-        mp.cod_marca,
-        mo.cod_modelo,
-        m.PRODUCTO_DESCRIPCION,
-        m.PRODUCTO_CODIGO,
-        m.PRODUCTO_PRECIO
-    FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.marca_producto AS mp ON mp.descripcion = m.PRODUCTO_MARCA
-    JOIN (
-        SELECT descripcion, MIN(cod_subrubro) AS cod_subrubro
-        FROM LOS_CHIMICHANGAS.subrubro
-        GROUP BY descripcion
-    ) AS sr ON sr.descripcion = m.PRODUCTO_SUB_RUBRO
-    JOIN LOS_CHIMICHANGAS.modelo_producto AS mo ON mo.cod_modelo = m.PRODUCTO_MOD_CODIGO;
+        cod_subrubro,                       
+        cod_marca,
+        cod_modelo,
+        descripcion,
+        codigo,
+        precio
+    FROM (
+        SELECT DISTINCT 
+            cod_subrubro,
+            cod_marca,
+            PRODUCTO_MOD_CODIGO AS cod_modelo,
+            PRODUCTO_DESCRIPCION AS descripcion,
+            PRODUCTO_CODIGO AS codigo,
+            PRODUCTO_PRECIO AS precio
+        FROM gd_esquema.Maestra m 
+            INNER JOIN LOS_CHIMICHANGAS.marca_producto mac ON m.PRODUCTO_MARCA = mac.descripcion
+		    INNER JOIN LOS_CHIMICHANGAS.rubro r ON r.descripcion = m.PRODUCTO_RUBRO_DESCRIPCION
+		    INNER JOIN LOS_CHIMICHANGAS.subrubro s ON (
+                m.PRODUCTO_SUB_RUBRO = s.descripcion AND 
+                s.cod_rubro = r.cod_rubro) 
+        WHERE PRODUCTO_CODIGO IS NOT NULL
+	) tmp
 END;
 GO
 
@@ -803,24 +811,46 @@ AS
 BEGIN
     INSERT INTO LOS_CHIMICHANGAS.publicacion (cod_publicacion, cod_vendedor, cod_producto, cod_almacen, descripcion, stock, fecha_inicio, fecha_fin, precio, costo_publicacion, porcentaje_venta)
     SELECT DISTINCT 
-        m.PUBLICACION_CODIGO,
-        v.cod_vendedor,                   
-        p.cod_producto,                   
-        a.cod_almacen,                    
-        m.PUBLICACION_DESCRIPCION,   
-        m.PUBLICACION_STOCK,              
-        m.PUBLICACION_FECHA,       
-        m.PUBLICACION_FECHA_V,        
-        m.PUBLICACION_PRECIO,          
-        m.PUBLICACION_COSTO, 
-        m.PUBLICACION_PORC_VENTA
-    FROM gd_esquema.Maestra AS m
-    JOIN LOS_CHIMICHANGAS.vendedor AS v ON v.razon_social = m.VENDEDOR_RAZON_SOCIAL
-    JOIN (SELECT MIN(cod_producto) AS cod_producto, descripcion FROM LOS_CHIMICHANGAS.producto GROUP BY descripcion) AS p
-        ON p.descripcion = m.PRODUCTO_DESCRIPCION
-    JOIN (SELECT MIN(cod_almacen) AS cod_almacen FROM LOS_CHIMICHANGAS.almacen GROUP BY cod_almacen) AS a
-        ON a.cod_almacen = m.ALMACEN_CODIGO
-    WHERE m.PUBLICACION_DESCRIPCION IS NOT NULL;
+        PUBLICACION_CODIGO,
+        cod_vendedor,                   
+        cod_producto,                   
+        cod_almacen,                    
+        PUBLICACION_DESCRIPCION,   
+        PUBLICACION_STOCK,              
+        PUBLICACION_FECHA,       
+        PUBLICACION_FECHA_V,        
+        PUBLICACION_PRECIO,          
+        PUBLICACION_COSTO, 
+        PUBLICACION_PORC_VENTA
+    FROM ( 
+            SELECT DISTINCT 
+                PUBLICACION_CODIGO,
+			cod_vendedor,                   
+			cod_producto,                   
+        cod_almacen,                    
+        PUBLICACION_DESCRIPCION,   
+        PUBLICACION_STOCK,              
+        PUBLICACION_FECHA,       
+        PUBLICACION_FECHA_V,        
+        PUBLICACION_PRECIO,          
+        PUBLICACION_COSTO, 
+        PUBLICACION_PORC_VENTA
+			FROM gd_esquema.Maestra m
+                JOIN LOS_CHIMICHANGAS.almacen a ON a.cod_almacen = m.ALMACEN_CODIGO 
+                JOIN LOS_CHIMICHANGAS.vendedor v ON (
+                    v.cuit = m.VENDEDOR_CUIT AND
+                    v.razon_social = m.VENDEDOR_RAZON_SOCIAL
+                )
+				JOIN LOS_CHIMICHANGAS.usuario u ON u.mail = m.VENDEDOR_MAIL
+                JOIN LOS_CHIMICHANGAS.marca_producto mar ON mar.descripcion = m.PRODUCTO_MARCA
+                JOIN LOS_CHIMICHANGAS.producto p ON (
+                    p.codigo = m.PRODUCTO_CODIGO AND
+                    p.cod_modelo = m.PRODUCTO_MOD_CODIGO AND
+                    p.cod_marca = mar.cod_marca AND
+                    p.precio = m.PRODUCTO_PRECIO
+                )
+                WHERE PUBLICACION_CODIGO IS NOT NULL
+    ) sub;
 END;
 GO
 
